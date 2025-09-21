@@ -1,0 +1,10 @@
+{
+  "background_color": "#ffffff",
+  "description": "CampusLearn",
+  "display": "standalone",
+  "name": "CampusLearn",
+  "short_name": "CampusLearn",
+  "start_url": "/index.html",
+  "theme_color": "#ffffff",
+  "scope": "/"
+}
