@@ -2,39 +2,21 @@ namespace CampusLearn.Presentation;
 
 public partial class LoginViewModel : ObservableObject
 {
-    private IAuthenticationService _authentication;
-
-    private INavigator _navigator;
-
-    private IDispatcher _dispatcher;
-
     [ObservableProperty]
-    private string? _username;
+    private string statusMessage = string.Empty;
 
-    [ObservableProperty]
-    private string? _password;
+    public ICommand MicrosoftLoginCommand { get; }
 
-    public LoginViewModel(
-        IDispatcher dispatcher,
-        INavigator navigator,
-        IAuthenticationService authentication)
+    public LoginViewModel()
     {
-        _dispatcher = dispatcher;
-        _navigator = navigator;
-        _authentication = authentication;
-        Login = new AsyncRelayCommand(DoLogin);
+        MicrosoftLoginCommand = new RelayCommand(OnMicrosoftLogin);
     }
 
-    private async Task DoLogin()
+    private void OnMicrosoftLogin()
     {
-        var success = await _authentication.LoginAsync(_dispatcher, new Dictionary<string, string> { { nameof(Username), Username ?? string.Empty }, { nameof(Password), Password ?? string.Empty } });
-        if (success)
-        {
-            await _navigator.NavigateViewModelAsync<MainViewModel>(this, qualifier: Qualifiers.ClearBackStack);
-        }
+        // Placeholder – will call MSAL later
+        StatusMessage = "Pretend Microsoft login successful.";
+        // TODO: Plug in MSAL authentication here
+        // TODO: Navigate to StudentDashboardPage
     }
-
-    public string Title { get; } = "Login";
-
-    public ICommand Login { get; }
 }

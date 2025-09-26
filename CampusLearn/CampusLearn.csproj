@@ -21,6 +21,7 @@
       UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
       https://aka.platform.uno/singleproject-features
     -->
+
     <UnoFeatures>
       Material;
       Dsp;
@@ -36,6 +37,7 @@
       Navigation;
       ThemeService;
       SkiaRenderer;
+      MVUX;
     </UnoFeatures>
   </PropertyGroup>
 
@@ -43,5 +45,7 @@
     <IsUiAutomationMappingEnabled>True</IsUiAutomationMappingEnabled>
     <DefineConstants>$(DefineConstants);USE_UITESTS</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup />
 
 </Project>
