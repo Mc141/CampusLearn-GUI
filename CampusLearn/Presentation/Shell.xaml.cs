@@ -1,4 +1,4 @@
-﻿namespace CampusLearn.Presentation;
+namespace CampusLearn.Presentation;
 
 public sealed partial class Shell : UserControl, IContentControlProvider
 {

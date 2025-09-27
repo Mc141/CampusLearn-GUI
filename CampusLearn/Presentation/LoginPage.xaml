@@ -3,72 +3,169 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:CampusLearn.Presentation"
+    xmlns:local="using:CampusLearn"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    xmlns:uen="using:Uno.Extensions.Navigation.UI"
+    xmlns:uer="using:Uno.Extensions.Reactive.UI"
     xmlns:um="using:Uno.Material"
+    xmlns:ut="using:Uno.Themes"
     xmlns:utu="using:Uno.Toolkit.UI"
-    Background="{ThemeResource BackgroundColor}"
-    NavigationCacheMode="Required"
+    xmlns:utum="using:Uno.Toolkit.UI.Material"
+    utu:StatusBar.Foreground="Auto"
+    Background="{ThemeResource BackgroundBrush}"
     mc:Ignorable="d">
 
-    <Grid utu:SafeArea.Insets="VisibleBounds">
+    <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
-            <RowDefinition />
         </Grid.RowDefinitions>
 
-        <!--  Top NavBar  -->
-        <utu:NavigationBar Content="CampusLearn™" />
+        <!--  Main Content  -->
+        <ScrollViewer
+            Grid.Row="0"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto"
+            ZoomMode="Disabled">
 
-        <!--  Centered Login Panel  -->
-        <StackPanel
-            Grid.Row="1"
-            Width="320"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Spacing="24">
-
-            <!--  Logo Placeholder  -->
-            <Border
-                Width="96"
-                Height="96"
+            <StackPanel
+                x:Name="LoginContainer"
+                Margin="20"
                 HorizontalAlignment="Center"
-                Background="{ThemeResource PrimaryColor}"
-                CornerRadius="48">
-                <!--  Replace with actual logo  -->
-                <TextBlock
+                VerticalAlignment="Center"
+                Orientation="Vertical"
+                Spacing="24">
+
+                <!--  CampusLearn Logo  -->
+                <Image
+                    x:Name="LogoImage"
+                    Width="200"
+                    MaxWidth="280"
                     HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    FontSize="28"
-                    FontWeight="Bold"
-                    Foreground="{ThemeResource OnPrimaryColor}"
-                    Text="CL" />
-            </Border>
+                    Source="ms-appx:///Assets/Logos/cl_book_logo.png"
+                    Stretch="Uniform" />
 
-            <!--  Title  -->
+                <!--  Header Text  -->
+                <TextBlock
+                    x:Name="HeaderText"
+                    MaxWidth="350"
+                    Margin="0,40,0,0"
+                    HorizontalAlignment="Center"
+                    Style="{StaticResource HeadlineMedium}"
+                    Text="Sign in with your Belgium Campus Account"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap" />
+
+                <!--  Login Button  -->
+                <Button
+                    x:Name="LoginButton"
+                    Height="56"
+                    MinHeight="48"
+                    MaxWidth="400"
+                    Margin="0,40,0,0"
+                    HorizontalAlignment="Stretch"
+                    Background="#2F6CE5"
+                    CornerRadius="6">
+                    <StackPanel
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="12">
+                        <Image
+                            Width="24"
+                            Height="24"
+                            Source="ms-appx:///Assets/Logos/ms_logo.png" />
+                        <TextBlock
+                            x:Name="LoginButtonText"
+                            VerticalAlignment="Center"
+                            Foreground="White"
+                            Style="{StaticResource TitleMedium}"
+                            Text="Login with Microsoft Account"
+                            TextAlignment="Center"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!--  Footer  -->
+        <StackPanel
+            x:Name="PoweredBySection"
+            Grid.Row="1"
+            Margin="20,20,20,20"
+            HorizontalAlignment="Center"
+            Orientation="Vertical"
+            Spacing="8">
             <TextBlock
-                Margin="0,8,0,16"
                 HorizontalAlignment="Center"
-                FontSize="20"
-                FontWeight="SemiBold"
-                Foreground="{ThemeResource OnBackgroundColor}"
-                Text="Sign in with your Campus Account" />
-
-            <!--  Microsoft Login Button  -->
-            <Button
-                HorizontalAlignment="Stretch"
-                Command="{Binding MicrosoftLoginCommand}"
-                Content="Login with Microsoft Account"
-                Style="{StaticResource FilledButtonStyle}" />
-
-            <!--  Status message  -->
-            <TextBlock
-                Margin="0,8,0,0"
-                HorizontalAlignment="Center"
-                FontSize="12"
-                Foreground="{ThemeResource OnSurfaceVariantColor}"
-                Text="{Binding StatusMessage}"
-                TextWrapping="Wrap" />
+                Opacity="0.8"
+                Style="{StaticResource LabelLarge}"
+                Text="Powered By" />
+            <Image
+                x:Name="PoweredByLogo"
+                MaxWidth="180"
+                Source="ms-appx:///Assets/Logos/bc_logo.png"
+                Stretch="Uniform" />
         </StackPanel>
+
+        <!--  Visual State Manager  -->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="WindowStates">
+
+                <!--  Mobile  -->
+                <VisualState x:Name="MobilePortrait">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="LoginContainer.MaxWidth" Value="320" />
+                        <Setter Target="LoginContainer.Spacing" Value="16" />
+                        <Setter Target="LogoImage.Width" Value="140" />
+                        <Setter Target="LogoImage.MaxWidth" Value="180" />
+                        <Setter Target="HeaderText.Style" Value="{StaticResource HeadlineSmall}" />
+                        <Setter Target="HeaderText.MaxWidth" Value="280" />
+                        <Setter Target="LoginButton.Height" Value="48" />
+                        <Setter Target="LoginButton.MaxWidth" Value="280" />
+                        <Setter Target="PoweredByLogo.MaxWidth" Value="120" />
+                    </VisualState.Setters>
+                </VisualState>
+
+                <!--  Tablet  -->
+                <VisualState x:Name="TabletPortrait">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="768" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="LoginContainer.MaxWidth" Value="420" />
+                        <Setter Target="LoginContainer.Spacing" Value="24" />
+                        <Setter Target="LogoImage.Width" Value="200" />
+                        <Setter Target="LogoImage.MaxWidth" Value="240" />
+                        <Setter Target="HeaderText.MaxWidth" Value="360" />
+                        <Setter Target="LoginButton.Height" Value="52" />
+                        <Setter Target="LoginButton.MaxWidth" Value="360" />
+                        <Setter Target="PoweredByLogo.MaxWidth" Value="160" />
+                    </VisualState.Setters>
+                </VisualState>
+
+                <!--  Desktop  -->
+                <VisualState x:Name="DesktopLarge">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1024" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="LoginContainer.MaxWidth" Value="500" />
+                        <Setter Target="LoginContainer.Spacing" Value="32" />
+                        <Setter Target="LogoImage.Width" Value="220" />
+                        <Setter Target="LogoImage.MaxWidth" Value="260" />
+                        <Setter Target="HeaderText.MaxWidth" Value="420" />
+                        <Setter Target="LoginButton.Height" Value="56" />
+                        <Setter Target="LoginButton.MaxWidth" Value="400" />
+                        <Setter Target="PoweredByLogo.MaxWidth" Value="180" />
+                    </VisualState.Setters>
+                </VisualState>
+
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
     </Grid>
 </Page>
