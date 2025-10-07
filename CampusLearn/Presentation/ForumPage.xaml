@@ -316,36 +316,52 @@
             </StackPanel>
 
             <!--  Topics  -->
-            <StackPanel
+            <Button 
                 Grid.Column="1"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Spacing="4">
-                <FontIcon
-                    FontFamily="Segoe MDL2 Assets"
-                    Foreground="#49454F"
-                    Glyph="&#xE8FD;" />
-                <TextBlock
-                    FontSize="12"
-                    Foreground="#49454F"
-                    Text="Topics" />
-            </StackPanel>
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Background="Transparent"
+                BorderThickness="0"
+                Padding="0"
+                Command="{Binding NavigateToTopicsCommand}">
+                <StackPanel 
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="4">
+                    <FontIcon 
+                        FontFamily="Segoe MDL2 Assets"
+                        Foreground="#49454F"
+                        Glyph="&#xE8FD;" />
+                    <TextBlock 
+                        FontSize="12"
+                        Foreground="#49454F"
+                        Text="Topics" />
+                </StackPanel>
+            </Button>
 
             <!--  Chat  -->
-            <StackPanel
+            <Button
                 Grid.Column="2"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Spacing="4">
-                <FontIcon
-                    FontFamily="Segoe MDL2 Assets"
-                    Foreground="#49454F"
-                    Glyph="&#xE8BD;" />
-                <TextBlock
-                    FontSize="12"
-                    Foreground="#49454F"
-                    Text="Chat" />
-            </StackPanel>
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Background="Transparent"
+                BorderThickness="0"
+                Padding="0"
+                Command="{Binding NavigateToChatCommand}">
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="4">
+                    <FontIcon
+                        FontFamily="Segoe MDL2 Assets"
+                        Foreground="#49454F"
+                        Glyph="&#xE8BD;" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="#49454F"
+                        Text="Chat" />
+                </StackPanel>
+            </Button>
         </Grid>
     </Grid>
 </Page>

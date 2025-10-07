@@ -1,18 +1,18 @@
 namespace CampusLearn.Presentation;
 
-public partial class ForumViewModel : ObservableObject
+public partial class TopicsViewModel : ObservableObject
 {
     private readonly INavigator _navigator;
 
-    public ForumViewModel(INavigator navigator)
+    public TopicsViewModel(INavigator navigator)
     {
         _navigator = navigator;
     }
 
     [RelayCommand]
-    private async Task NavigateToTopics()
+    private async Task NavigateToForum()
     {
-        await _navigator.NavigateViewModelAsync<TopicsViewModel>(this, qualifier: Qualifiers.ClearBackStack);
+        await _navigator.NavigateViewModelAsync<ForumViewModel>(this, qualifier: Qualifiers.ClearBackStack);
     }
 
     [RelayCommand]
