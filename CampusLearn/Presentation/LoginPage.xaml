@@ -66,6 +66,7 @@
                     Margin="0,40,0,0"
                     HorizontalAlignment="Stretch"
                     Background="#2F6CE5"
+                    Command="{Binding MicrosoftLoginCommand}"
                     CornerRadius="6">
                     <StackPanel
                         HorizontalAlignment="Center"

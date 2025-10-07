@@ -100,6 +100,7 @@ public partial class App : Application
         views.Register(
             new ViewMap(ViewModel: typeof(ShellViewModel)),
             new ViewMap<LoginPage, LoginViewModel>(),
+            new ViewMap<ForumPage, ForumViewModel>(),
             new ViewMap<MainPage, MainViewModel>(),
             new DataViewMap<SecondPage, SecondViewModel, Entity>()
         );
@@ -110,6 +111,7 @@ public partial class App : Application
                 Nested:
                 [
                     new("Login", View: views.FindByViewModel<LoginViewModel>()),
+                    new("Forum", View: views.FindByViewModel<ForumViewModel>()),
                     new("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault: true),
                     new("Second", View: views.FindByViewModel<SecondViewModel>())
                 ]

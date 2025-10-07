@@ -1,8 +1,8 @@
 namespace CampusLearn.Presentation;
 
-public sealed partial class LoginPage : Page
+public sealed partial class ForumPage : Page
 {
-    public LoginPage()
+    public ForumPage()
     {
         this.InitializeComponent();
     }
