@@ -20,4 +20,16 @@ public partial class TopicsViewModel : ObservableObject
     {
         await _navigator.NavigateViewModelAsync<ChatViewModel>(this, qualifier: Qualifiers.ClearBackStack);
     }
+
+    [RelayCommand]
+    private async Task NavigateToProfile()
+    {
+        await _navigator.NavigateViewModelAsync<ProfileViewModel>(this);
+    }
+
+    [RelayCommand]
+    private async Task NavigateToTopicsDetail()
+    {
+        await _navigator.NavigateViewModelAsync<TopicsDetailViewModel>(this);
+    }
 }

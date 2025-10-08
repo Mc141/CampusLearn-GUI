@@ -33,17 +33,39 @@
             </StackPanel>
 
             <!-- Profile icon -->
-            <Border Grid.Column="1"
-                    Width="40" Height="40"
+            <Button Grid.Column="1"
+                    Width="40"
+                    Height="40"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Command="{Binding NavigateToProfileCommand}">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonForeground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
+                    <Thickness x:Key="ButtonBorderThemeThickness">0</Thickness>
+                </Button.Resources>
+                <Border
+                    Width="40"
+                    Height="40"
                     CornerRadius="20"
                     Background="#E8DEF8">
-                <FontIcon Glyph="&#xE77B;"
-                          FontFamily="Segoe MDL2 Assets"
-                          Foreground="#6750A4"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          FontSize="20"/>
-            </Border>
+                    <FontIcon Glyph="&#xE77B;"
+                              FontFamily="Segoe MDL2 Assets"
+                              Foreground="#6750A4"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              FontSize="20"/>
+                </Border>
+            </Button>
         </Grid>
 
         <!-- ========== MAIN CONTENT ========== -->
@@ -98,47 +120,54 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
 
-                    <!-- Module Card -->
-                    <Border Background="{ThemeResource SurfaceBrush}"
-                            CornerRadius="12"
-                            Padding="16"
-                            MinWidth="600">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                    <!-- Module Card (Clickable) -->
+                    <Button Background="Transparent"
+                            BorderThickness="0"
+                            Padding="0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Command="{Binding NavigateToTopicsDetailCommand}">
+                        <Border Background="{ThemeResource SurfaceBrush}"
+                                CornerRadius="12"
+                                Padding="16"
+                                MinWidth="600">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-                            <!-- Icon -->
-                            <Border Width="60" Height="60"
-                                    Margin="0,0,16,0"
-                                    Background="#E8DEF8"
-                                    CornerRadius="8"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center">
-                                <FontIcon Glyph="&#xE91B;"
-                                          FontFamily="Segoe MDL2 Assets"
-                                          Foreground="#6750A4"
-                                          FontSize="28"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"/>
-                            </Border>
+                                <!-- Icon -->
+                                <Border Width="60" Height="60"
+                                        Margin="0,0,16,0"
+                                        Background="#E8DEF8"
+                                        CornerRadius="8"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE91B;"
+                                              FontFamily="Segoe MDL2 Assets"
+                                              Foreground="#6750A4"
+                                              FontSize="28"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                                </Border>
 
-                            <!-- Info -->
-                            <StackPanel Grid.Column="1"
-                                        VerticalAlignment="Center"
-                                        Spacing="4">
-                                <TextBlock Text="Bachelor of Computing"
-                                           Foreground="{ThemeResource OnSurfaceVariantBrush}"
-                                           FontSize="12"
-                                           FontWeight="Normal"/>
-                                <TextBlock Text="Database Development 381"
-                                           Foreground="{ThemeResource OnSurfaceBrush}"
-                                           FontSize="15"
-                                           FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
+                                <!-- Info -->
+                                <StackPanel Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Spacing="4">
+                                    <TextBlock Text="Bachelor of Computing"
+                                               Foreground="{ThemeResource OnSurfaceVariantBrush}"
+                                               FontSize="12"
+                                               FontWeight="Normal"/>
+                                    <TextBlock Text="Database Development 381"
+                                               Foreground="{ThemeResource OnSurfaceBrush}"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Button>
 
                     <!-- Duplicate examples -->
                     <Border Background="{ThemeResource SurfaceBrush}" CornerRadius="12" Padding="16" MinWidth="600">

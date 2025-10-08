@@ -33,17 +33,39 @@
             </StackPanel>
 
             <!-- Profile icon -->
-            <Border Grid.Column="1"
-                    Width="40" Height="40"
+            <Button Grid.Column="1"
+                    Width="40"
+                    Height="40"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Command="{Binding NavigateToProfileCommand}">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonForeground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
+                    <Thickness x:Key="ButtonBorderThemeThickness">0</Thickness>
+                </Button.Resources>
+                <Border
+                    Width="40"
+                    Height="40"
                     CornerRadius="20"
                     Background="#E8DEF8">
-                <FontIcon Glyph="&#xE77B;"
-                          FontFamily="Segoe MDL2 Assets"
-                          Foreground="#6750A4"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          FontSize="20"/>
-            </Border>
+                    <FontIcon Glyph="&#xE77B;"
+                              FontFamily="Segoe MDL2 Assets"
+                              Foreground="#6750A4"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              FontSize="20"/>
+                </Border>
+            </Button>
         </Grid>
 
         <!-- ========== MAIN CONTENT ========== -->
@@ -97,47 +119,54 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
 
-                    <!-- Chat Item -->
-                    <Border Background="{ThemeResource SurfaceBrush}"
-                            CornerRadius="12"
-                            Padding="16"
-                            MinWidth="600">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                    <!-- Chat Item (Clickable) -->
+                    <Button Background="Transparent"
+                            BorderThickness="0"
+                            Padding="0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Command="{Binding NavigateToChatDetailCommand}">
+                        <Border Background="{ThemeResource SurfaceBrush}"
+                                CornerRadius="12"
+                                Padding="16"
+                                MinWidth="600">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-                            <!-- Avatar -->
-                            <Border Width="48" Height="48"
-                                    CornerRadius="24"
-                                    Background="#E8DEF8"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center">
-                                <FontIcon Glyph="&#xE77B;"
-                                          FontFamily="Segoe MDL2 Assets"
-                                          Foreground="#6750A4"
-                                          FontSize="22"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"/>
-                            </Border>
-
-                            <!-- Chat Info -->
-                            <StackPanel Grid.Column="1"
-                                        Margin="12,0,0,0"
+                                <!-- Avatar -->
+                                <Border Width="48" Height="48"
+                                        CornerRadius="24"
+                                        Background="#E8DEF8"
+                                        HorizontalAlignment="Center"
                                         VerticalAlignment="Center">
-                                <TextBlock Text="MR AI • 2 hr ago"
-                                           Foreground="#49454F"
-                                           FontSize="13"/>
-                                <TextBlock Text="I am your friendly..."
-                                           Foreground="{ThemeResource OnSurfaceBrush}"
-                                           FontSize="15"
-                                           FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
+                                    <FontIcon Glyph="&#xE77B;"
+                                              FontFamily="Segoe MDL2 Assets"
+                                              Foreground="#6750A4"
+                                              FontSize="22"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                                </Border>
 
-                    <!-- Duplicate Example -->
+                                <!-- Chat Info -->
+                                <StackPanel Grid.Column="1"
+                                            Margin="12,0,0,0"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="MR AI • 2 hr ago"
+                                               Foreground="#49454F"
+                                               FontSize="13"/>
+                                    <TextBlock Text="I am your friendly..."
+                                               Foreground="{ThemeResource OnSurfaceBrush}"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Button>
+
+                    <!-- Duplicate Example (Not clickable) -->
                     <Border Background="{ThemeResource SurfaceBrush}"
                             CornerRadius="12"
                             Padding="16"

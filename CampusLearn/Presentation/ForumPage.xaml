@@ -45,20 +45,41 @@
             </StackPanel>
 
             <!--  Profile icon  -->
-            <Border
+            <Button
                 Grid.Column="1"
                 Width="40"
                 Height="40"
-                Background="#E8DEF8"
-                CornerRadius="20">
-                <FontIcon
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    FontFamily="Segoe MDL2 Assets"
-                    FontSize="20"
-                    Foreground="#6750A4"
-                    Glyph="&#xE77B;" />
-            </Border>
+                Padding="0"
+                Background="Transparent"
+                BorderThickness="0"
+                Command="{Binding NavigateToProfileCommand}">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonForeground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
+                    <Thickness x:Key="ButtonBorderThemeThickness">0</Thickness>
+                </Button.Resources>
+                <Border
+                    Width="40"
+                    Height="40"
+                    Background="#E8DEF8"
+                    CornerRadius="20">
+                    <FontIcon
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontFamily="Segoe MDL2 Assets"
+                        FontSize="20"
+                        Foreground="#6750A4"
+                        Glyph="&#xE77B;" />
+                </Border>
+            </Button>
         </Grid>
 
         <!--  ========== MAIN CONTENT ==========  -->
@@ -158,98 +179,106 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
 
-                    <!--  Example post card  -->
-                    <Border
-                        Padding="16"
-                        Background="#F7F2FA"
-                        CornerRadius="12">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
+                    <!--  Example post card (Clickable) -->
+                    <Button
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="0"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        Command="{Binding NavigateToForumDetailCommand}">
+                        <Border
+                            Padding="16"
+                            Background="#F7F2FA"
+                            CornerRadius="12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
 
-                            <!--  Header  -->
-                            <Grid Grid.Row="0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                                <!--  Header  -->
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Foreground="#49454F"
+                                        Style="{StaticResource BodySmall}"
+                                        Text="John Doe • 2 hr ago" />
+                                    <FontIcon
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        FontFamily="Segoe MDL2 Assets"
+                                        Foreground="#49454F"
+                                        Glyph="&#xE712;" />
+                                </Grid>
+
+                                <!--  Title  -->
                                 <TextBlock
-                                    VerticalAlignment="Center"
-                                    Foreground="#49454F"
-                                    Style="{StaticResource BodySmall}"
-                                    Text="John Doe • 2 hr ago" />
-                                <FontIcon
-                                    Grid.Column="1"
-                                    VerticalAlignment="Center"
-                                    FontFamily="Segoe MDL2 Assets"
-                                    Foreground="#49454F"
-                                    Glyph="&#xE712;" />
+                                    Grid.Row="1"
+                                    Margin="0,8,0,4"
+                                    Foreground="{ThemeResource OnSurfaceBrush}"
+                                    Style="{StaticResource TitleMedium}"
+                                    Text="Stuck on SQL Joins in BIT222" />
+
+                                <!--  Description  -->
+                                <TextBlock
+                                    Grid.Row="2"
+                                    Margin="0,0,0,12"
+                                    Foreground="{ThemeResource OnSurfaceVariantBrush}"
+                                    Style="{StaticResource BodyMedium}"
+                                    Text="I understand basic SELECT queries, but struggling with joins between multiple tables."
+                                    TextWrapping="Wrap" />
+
+                                <!--  Actions  -->
+                                <StackPanel
+                                    Grid.Row="3"
+                                    Orientation="Horizontal"
+                                    Spacing="16">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <FontIcon
+                                            FontFamily="Segoe MDL2 Assets"
+                                            FontSize="16"
+                                            Foreground="#49454F"
+                                            Glyph="&#xE90A;" />
+                                        <TextBlock
+                                            Foreground="#49454F"
+                                            Style="{StaticResource BodySmall}"
+                                            Text="4" />
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <FontIcon
+                                            FontFamily="Segoe MDL2 Assets"
+                                            FontSize="16"
+                                            Foreground="#49454F"
+                                            Glyph="&#xE8E1;" />
+                                        <TextBlock
+                                            Foreground="#49454F"
+                                            Style="{StaticResource BodySmall}"
+                                            Text="12" />
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <FontIcon
+                                            FontFamily="Segoe MDL2 Assets"
+                                            FontSize="16"
+                                            Foreground="#49454F"
+                                            Glyph="&#xE8E0;" />
+                                        <TextBlock
+                                            Foreground="#49454F"
+                                            Style="{StaticResource BodySmall}"
+                                            Text="4" />
+                                    </StackPanel>
+                                </StackPanel>
                             </Grid>
-
-                            <!--  Title  -->
-                            <TextBlock
-                                Grid.Row="1"
-                                Margin="0,8,0,4"
-                                Foreground="{ThemeResource OnSurfaceBrush}"
-                                Style="{StaticResource TitleMedium}"
-                                Text="Stuck on SQL Joins in BIT222" />
-
-                            <!--  Description  -->
-                            <TextBlock
-                                Grid.Row="2"
-                                Margin="0,0,0,12"
-                                Foreground="{ThemeResource OnSurfaceVariantBrush}"
-                                Style="{StaticResource BodyMedium}"
-                                Text="I understand basic SELECT queries, but struggling with joins between multiple tables."
-                                TextWrapping="Wrap" />
-
-                            <!--  Actions  -->
-                            <StackPanel
-                                Grid.Row="3"
-                                Orientation="Horizontal"
-                                Spacing="16">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <FontIcon
-                                        FontFamily="Segoe MDL2 Assets"
-                                        FontSize="16"
-                                        Foreground="#49454F"
-                                        Glyph="&#xE90A;" />
-                                    <TextBlock
-                                        Foreground="#49454F"
-                                        Style="{StaticResource BodySmall}"
-                                        Text="4" />
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <FontIcon
-                                        FontFamily="Segoe MDL2 Assets"
-                                        FontSize="16"
-                                        Foreground="#49454F"
-                                        Glyph="&#xE8E1;" />
-                                    <TextBlock
-                                        Foreground="#49454F"
-                                        Style="{StaticResource BodySmall}"
-                                        Text="12" />
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <FontIcon
-                                        FontFamily="Segoe MDL2 Assets"
-                                        FontSize="16"
-                                        Foreground="#49454F"
-                                        Glyph="&#xE8E0;" />
-                                    <TextBlock
-                                        Foreground="#49454F"
-                                        Style="{StaticResource BodySmall}"
-                                        Text="4" />
-                                </StackPanel>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
+                        </Border>
+                    </Button>
 
                     <!--  Duplicate a few for demo  -->
                     <Border

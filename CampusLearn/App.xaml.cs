@@ -101,8 +101,13 @@ public partial class App : Application
             new ViewMap(ViewModel: typeof(ShellViewModel)),
             new ViewMap<LoginPage, LoginViewModel>(),
             new ViewMap<ForumPage, ForumViewModel>(),
+            new ViewMap<ForumDetailPage, ForumDetailViewModel>(),
             new ViewMap<TopicsPage, TopicsViewModel>(),
+            new ViewMap<TopicsDetailPage, TopicsDetailViewModel>(),
+            new ViewMap<DiscussionDetailPage, DiscussionDetailViewModel>(),
             new ViewMap<ChatPage, ChatViewModel>(),
+            new ViewMap<ChatDetailPage, ChatDetailViewModel>(),
+            new ViewMap<ProfilePage, ProfileViewModel>(),
             new ViewMap<MainPage, MainViewModel>(),
             new DataViewMap<SecondPage, SecondViewModel, Entity>()
         );
@@ -114,8 +119,13 @@ public partial class App : Application
                 [
                     new("Login", View: views.FindByViewModel<LoginViewModel>()),
                     new("Forum", View: views.FindByViewModel<ForumViewModel>()),
+                    new("ForumDetail", View: views.FindByViewModel<ForumDetailViewModel>()),
                     new("Topics", View: views.FindByViewModel<TopicsViewModel>()),
+                    new("TopicsDetail", View: views.FindByViewModel<TopicsDetailViewModel>()),
+                    new("DiscussionDetail", View: views.FindByViewModel<DiscussionDetailViewModel>()),
                     new("Chat", View: views.FindByViewModel<ChatViewModel>()),
+                    new("ChatDetail", View: views.FindByViewModel<ChatDetailViewModel>()),
+                    new("Profile", View: views.FindByViewModel<ProfileViewModel>()),
                     new("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault: true),
                     new("Second", View: views.FindByViewModel<SecondViewModel>())
                 ]
