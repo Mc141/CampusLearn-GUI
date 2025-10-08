@@ -137,22 +137,30 @@
                     <Rectangle Height="1" Fill="{ThemeResource OutlineBrush}" Margin="0,4"/>
 
                     <!-- Help -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <FontIcon Glyph="&#xE897;" FontFamily="Segoe MDL2 Assets"
-                                  Foreground="{ThemeResource OnSurfaceBrush}" FontSize="18" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="Help"
-                                   FontSize="15"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource OnSurfaceBrush}"/>
-                        <FontIcon Grid.Column="2" Glyph="&#xE72A;"
-                                  FontFamily="Segoe MDL2 Assets"
-                                  Foreground="{ThemeResource OnSurfaceVariantBrush}" FontSize="16"/>
-                    </Grid>
+                    <Button
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="0"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        Command="{Binding NavigateToHelpCommand}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE897;" FontFamily="Segoe MDL2 Assets"
+                                      Foreground="{ThemeResource OnSurfaceBrush}" FontSize="18" Margin="0,0,12,0"/>
+                            <TextBlock Grid.Column="1" Text="Help"
+                                       FontSize="15"
+                                       VerticalAlignment="Center"
+                                       Foreground="{ThemeResource OnSurfaceBrush}"/>
+                            <FontIcon Grid.Column="2" Glyph="&#xE72A;"
+                                      FontFamily="Segoe MDL2 Assets"
+                                      Foreground="{ThemeResource OnSurfaceVariantBrush}" FontSize="16"/>
+                        </Grid>
+                    </Button>
                 </StackPanel>
 
                 <!-- Log Out -->

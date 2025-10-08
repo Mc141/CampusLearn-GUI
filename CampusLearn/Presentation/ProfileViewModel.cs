@@ -14,4 +14,10 @@ public partial class ProfileViewModel : ObservableObject
     {
         await _navigator.NavigateBackAsync(this);
     }
+
+    [RelayCommand]
+    private async Task NavigateToHelp()
+    {
+        await _navigator.NavigateViewModelAsync<HelpViewModel>(this);
+    }
 }
