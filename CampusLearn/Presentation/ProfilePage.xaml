@@ -134,6 +134,44 @@
 
                     <Rectangle Height="1" Fill="{ThemeResource OutlineBrush}" Margin="0,4"/>
 
+                    <!-- Resources -->
+                    <Button
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="0"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        Command="{Binding NavigateToResourcesCommand}">
+                        <Button.Resources>
+                            <SolidColorBrush x:Key="ButtonBackground" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#F7F2FA"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#E8DEF8"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
+                            <Thickness x:Key="ButtonBorderThemeThickness">0</Thickness>
+                        </Button.Resources>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE8A5;" FontFamily="Segoe MDL2 Assets"
+                                      Foreground="{ThemeResource OnSurfaceBrush}" FontSize="18" Margin="0,0,12,0"/>
+                            <TextBlock Grid.Column="1" Text="Resources"
+                                       FontSize="15"
+                                       VerticalAlignment="Center"
+                                       Foreground="{ThemeResource OnSurfaceBrush}"/>
+                            <FontIcon Grid.Column="2" Glyph="&#xE72A;"
+                                      FontFamily="Segoe MDL2 Assets"
+                                      Foreground="{ThemeResource OnSurfaceVariantBrush}" FontSize="16"/>
+                        </Grid>
+                    </Button>
+
+                    <Rectangle Height="1" Fill="{ThemeResource OutlineBrush}" Margin="0,4"/>
+
                     <!-- Settings -->
                     <Button
                         Background="Transparent"

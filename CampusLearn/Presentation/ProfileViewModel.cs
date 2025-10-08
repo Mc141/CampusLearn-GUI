@@ -32,4 +32,10 @@ public partial class ProfileViewModel : ObservableObject
     {
         await _navigator.NavigateViewModelAsync<HelpViewModel>(this);
     }
+
+    [RelayCommand]
+    private async Task NavigateToResources()
+    {
+        await _navigator.NavigateViewModelAsync<ResourcesLibraryViewModel>(this);
+    }
 }
