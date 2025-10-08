@@ -108,6 +108,9 @@ public partial class App : Application
             new ViewMap<ChatPage, ChatViewModel>(),
             new ViewMap<ChatDetailPage, ChatDetailViewModel>(),
             new ViewMap<ProfilePage, ProfileViewModel>(),
+            new ViewMap<AccountPage, AccountViewModel>(),
+            new ViewMap<SettingsPage, SettingsViewModel>(),
+            new ViewMap<HelpPage, HelpViewModel>(),
             new ViewMap<MainPage, MainViewModel>(),
             new DataViewMap<SecondPage, SecondViewModel, Entity>()
         );
@@ -126,6 +129,9 @@ public partial class App : Application
                     new("Chat", View: views.FindByViewModel<ChatViewModel>()),
                     new("ChatDetail", View: views.FindByViewModel<ChatDetailViewModel>()),
                     new("Profile", View: views.FindByViewModel<ProfileViewModel>()),
+                    new("Account", View: views.FindByViewModel<AccountViewModel>()),
+                    new("Settings", View: views.FindByViewModel<SettingsViewModel>()),
+                    new("Help", View: views.FindByViewModel<HelpViewModel>()),
                     new("Main", View: views.FindByViewModel<MainViewModel>(), IsDefault: true),
                     new("Second", View: views.FindByViewModel<SecondViewModel>())
                 ]

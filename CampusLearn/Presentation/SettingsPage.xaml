@@ -1,0 +1,247 @@
+﻿<Page
+    x:Class="CampusLearn.Presentation.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:utu="using:Uno.Toolkit.UI"
+    utu:StatusBar.Foreground="Auto"
+    Background="{ThemeResource BackgroundBrush}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Header -->
+            <RowDefinition Height="*"/>    <!-- Main content -->
+        </Grid.RowDefinitions>
+
+        <!-- ========== HEADER ========== -->
+        <Grid Grid.Row="0"
+              Padding="20,16"
+              Background="{ThemeResource SurfaceBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Back Button -->
+            <Button
+                Width="40"
+                Height="40"
+                Padding="0"
+                Background="Transparent"
+                BorderThickness="0"
+                Command="{Binding NavigateBackCommand}">
+                <Border
+                    Width="40"
+                    Height="40"
+                    CornerRadius="20"
+                    Background="#E8DEF8"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                    <FontIcon
+                        Glyph="&#xE72B;"
+                        FontFamily="Segoe MDL2 Assets"
+                        Foreground="#6750A4"
+                        FontSize="18"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
+                </Border>
+            </Button>
+
+            <!-- CampusLearn logo -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="Campus" FontSize="24" FontWeight="Bold"
+                           Foreground="{ThemeResource OnSurfaceBrush}"/>
+                <TextBlock Text="Learn" FontSize="24" FontWeight="Bold"
+                           Foreground="#FFC107"/>
+                <TextBlock Text="™" FontSize="14" FontWeight="Bold"
+                           Foreground="#FFC107" VerticalAlignment="Top" Margin="2,0,0,0"/>
+            </StackPanel>
+
+            <!-- Profile icon -->
+            <Button Grid.Column="2"
+                    Width="40" Height="40"
+                    Padding="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Command="{Binding NavigateToProfileCommand}">
+                <Border Width="40" Height="40"
+                        Background="#E8DEF8"
+                        CornerRadius="20">
+                    <FontIcon FontFamily="Segoe MDL2 Assets"
+                              FontSize="20"
+                              Foreground="#6750A4"
+                              Glyph="&#xE77B;"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                </Border>
+            </Button>
+        </Grid>
+
+        <!-- ========== MAIN CONTENT ========== -->
+        <ScrollViewer Grid.Row="1" Padding="20,16" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="24" MaxWidth="700" HorizontalAlignment="Center">
+
+                <!-- Title -->
+                <TextBlock Text="Settings"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="{ThemeResource OnSurfaceBrush}"/>
+
+                <!-- Subtitle -->
+                <TextBlock Text="Manage your preferences and personalize your CampusLearn experience."
+                           FontSize="16"
+                           Foreground="#49454F"
+                           TextWrapping="Wrap"/>
+
+                <!-- Divider -->
+                <Rectangle Height="1"
+                           Fill="{ThemeResource OutlineBrush}"
+                           Margin="0,8"/>
+
+                <!-- Account Settings -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Account"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource OnSurfaceBrush}"/>
+
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Change Password"
+                                   FontSize="15"
+                                   Foreground="#49454F"
+                                   VerticalAlignment="Center"/>
+                        <FontIcon Grid.Column="1"
+                                  Glyph="&#xE72A;"
+                                  FontFamily="Segoe MDL2 Assets"
+                                  Foreground="#49454F"
+                                  FontSize="14"/>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Manage Linked Accounts"
+                                   FontSize="15"
+                                   Foreground="#49454F"
+                                   VerticalAlignment="Center"/>
+                        <FontIcon Grid.Column="1"
+                                  Glyph="&#xE72A;"
+                                  FontFamily="Segoe MDL2 Assets"
+                                  Foreground="#49454F"
+                                  FontSize="14"/>
+                    </Grid>
+                </StackPanel>
+
+                <Rectangle Height="1" Fill="{ThemeResource OutlineBrush}" Margin="0,8"/>
+
+                <!-- Notifications -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Notifications"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource OnSurfaceBrush}"/>
+
+                    <ToggleSwitch Header="Push Notifications"
+                                  OnContent="On"
+                                  OffContent="Off"
+                                  IsOn="True"/>
+                    <ToggleSwitch Header="Email Updates"
+                                  OnContent="On"
+                                  OffContent="Off"
+                                  IsOn="True"/>
+                    <ToggleSwitch Header="Forum Mentions"
+                                  OnContent="On"
+                                  OffContent="Off"
+                                  IsOn="False"/>
+                </StackPanel>
+
+                <Rectangle Height="1" Fill="{ThemeResource OutlineBrush}" Margin="0,8"/>
+
+                <!-- Appearance -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Appearance"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource OnSurfaceBrush}"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="Theme"
+                                   FontSize="15"
+                                   Foreground="#49454F"
+                                   VerticalAlignment="Center"/>
+                        <ComboBox Width="150" SelectedIndex="0">
+                            <ComboBoxItem Content="System Default"/>
+                            <ComboBoxItem Content="Light"/>
+                            <ComboBoxItem Content="Dark"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <ToggleSwitch Header="Use Large Font Size"
+                                  OnContent="On"
+                                  OffContent="Off"
+                                  IsOn="False"/>
+                </StackPanel>
+
+                <Rectangle Height="1" Fill="{ThemeResource OutlineBrush}" Margin="0,8"/>
+
+                <!-- Privacy -->
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Privacy &amp; Security"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource OnSurfaceBrush}"/>
+
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Data &amp; Privacy Policy"
+                                   FontSize="15"
+                                   Foreground="#49454F"
+                                   VerticalAlignment="Center"/>
+                        <FontIcon Grid.Column="1"
+                                  Glyph="&#xE72A;"
+                                  FontFamily="Segoe MDL2 Assets"
+                                  Foreground="#49454F"
+                                  FontSize="14"/>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Manage Cookies"
+                                   FontSize="15"
+                                   Foreground="#49454F"
+                                   VerticalAlignment="Center"/>
+                        <FontIcon Grid.Column="1"
+                                  Glyph="&#xE72A;"
+                                  FontFamily="Segoe MDL2 Assets"
+                                  Foreground="#49454F"
+                                  FontSize="14"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Logout -->
+                <Button Content="Log out"
+                        HorizontalAlignment="Center"
+                        Margin="0,24,0,40"
+                        Padding="24,8"
+                        Foreground="#6750A4"
+                        BorderBrush="#6750A4"
+                        Background="Transparent"
+                        CornerRadius="8"
+                        FontSize="15"
+                        FontWeight="SemiBold"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

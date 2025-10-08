@@ -1,10 +1,10 @@
 namespace CampusLearn.Presentation;
 
-public partial class HelpViewModel : ObservableObject
+public partial class SettingsViewModel : ObservableObject
 {
     private readonly INavigator _navigator;
 
-    public HelpViewModel(INavigator navigator)
+    public SettingsViewModel(INavigator navigator)
     {
         _navigator = navigator;
     }

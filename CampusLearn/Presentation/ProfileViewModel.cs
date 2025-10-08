@@ -16,6 +16,18 @@ public partial class ProfileViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task NavigateToAccount()
+    {
+        await _navigator.NavigateViewModelAsync<AccountViewModel>(this);
+    }
+
+    [RelayCommand]
+    private async Task NavigateToSettings()
+    {
+        await _navigator.NavigateViewModelAsync<SettingsViewModel>(this);
+    }
+
+    [RelayCommand]
     private async Task NavigateToHelp()
     {
         await _navigator.NavigateViewModelAsync<HelpViewModel>(this);
