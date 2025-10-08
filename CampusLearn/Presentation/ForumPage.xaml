@@ -1,5 +1,6 @@
 ﻿<Page
     x:Class="CampusLearn.Presentation.ForumPage"
+    x:Name="RootPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:utu="using:Uno.Toolkit.UI"
@@ -99,6 +100,7 @@
                     CornerRadius="28">
                     <Grid Padding="20,0">
                         <TextBox
+                            Text="{Binding SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                             VerticalAlignment="Center"
                             Background="Transparent"
                             BorderThickness="0"
@@ -130,12 +132,7 @@
 
                 <!--  Filter Chips  -->
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                    <ItemsControl>
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="8" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button
                             Padding="16,8"
                             Background="{ThemeResource SurfaceBrush}"
@@ -143,7 +140,9 @@
                             BorderThickness="1"
                             Content="Trending"
                             CornerRadius="8"
-                            Foreground="#1C1B1F" />
+                            Foreground="#1C1B1F"
+                            Command="{Binding SelectFilterCommand}"
+                            CommandParameter="Trending" />
                         <Button
                             Padding="16,8"
                             Background="{ThemeResource SurfaceBrush}"
@@ -151,7 +150,9 @@
                             BorderThickness="1"
                             Content="Likes"
                             CornerRadius="8"
-                            Foreground="#1C1B1F" />
+                            Foreground="#1C1B1F"
+                            Command="{Binding SelectFilterCommand}"
+                            CommandParameter="Likes" />
                         <Button
                             Padding="16,8"
                             Background="{ThemeResource SurfaceBrush}"
@@ -159,7 +160,9 @@
                             BorderThickness="1"
                             Content="Dislikes"
                             CornerRadius="8"
-                            Foreground="#1C1B1F" />
+                            Foreground="#1C1B1F"
+                            Command="{Binding SelectFilterCommand}"
+                            CommandParameter="Dislikes" />
                         <Button
                             Padding="16,8"
                             Background="{ThemeResource SurfaceBrush}"
@@ -167,126 +170,128 @@
                             BorderThickness="1"
                             Content="Recent"
                             CornerRadius="8"
-                            Foreground="#1C1B1F" />
-                    </ItemsControl>
+                            Foreground="#1C1B1F"
+                            Command="{Binding SelectFilterCommand}"
+                            CommandParameter="Recent" />
+                    </StackPanel>
                 </ScrollViewer>
 
                 <!--  Posts  -->
-                <ItemsControl>
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Spacing="12" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
+                <ItemsControl ItemsSource="{Binding FilteredPosts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button
+                                Margin="0,0,0,12"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="0"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch"
+                                Command="{Binding DataContext.NavigateToForumDetailCommand, ElementName=RootPage}"
+                                CommandParameter="{Binding}">
+                                <Border
+                                    Padding="16"
+                                    Background="#F7F2FA"
+                                    CornerRadius="12">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
 
-                    <!--  Example post card (Clickable) -->
-                    <Button
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Padding="0"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Stretch"
-                        Command="{Binding NavigateToForumDetailCommand}">
-                        <Border
-                            Padding="16"
-                            Background="#F7F2FA"
-                            CornerRadius="12">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
+                                        <!--  Header  -->
+                                        <Grid Grid.Row="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                Foreground="#49454F"
+                                                FontSize="13">
+                                                <Run Text="{Binding DisplayName}" />
+                                                <Run Text=" • " />
+                                                <Run Text="{Binding TimeAgo}" />
+                                            </TextBlock>
+                                            <FontIcon
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                FontFamily="Segoe MDL2 Assets"
+                                                Foreground="#49454F"
+                                                Glyph="&#xE712;" />
+                                        </Grid>
 
-                                <!--  Header  -->
-                                <Grid Grid.Row="0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock
-                                        VerticalAlignment="Center"
-                                        Foreground="#49454F"
-                                        Style="{StaticResource BodySmall}"
-                                        Text="John Doe • 2 hr ago" />
-                                    <FontIcon
-                                        Grid.Column="1"
-                                        VerticalAlignment="Center"
-                                        FontFamily="Segoe MDL2 Assets"
-                                        Foreground="#49454F"
-                                        Glyph="&#xE712;" />
-                                </Grid>
-
-                                <!--  Title  -->
-                                <TextBlock
-                                    Grid.Row="1"
-                                    Margin="0,8,0,4"
-                                    Foreground="{ThemeResource OnSurfaceBrush}"
-                                    Style="{StaticResource TitleMedium}"
-                                    Text="Stuck on SQL Joins in BIT222" />
-
-                                <!--  Description  -->
-                                <TextBlock
-                                    Grid.Row="2"
-                                    Margin="0,0,0,12"
-                                    Foreground="{ThemeResource OnSurfaceVariantBrush}"
-                                    Style="{StaticResource BodyMedium}"
-                                    Text="I understand basic SELECT queries, but struggling with joins between multiple tables."
-                                    TextWrapping="Wrap" />
-
-                                <!--  Actions  -->
-                                <StackPanel
-                                    Grid.Row="3"
-                                    Orientation="Horizontal"
-                                    Spacing="16">
-                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <FontIcon
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="16"
-                                            Foreground="#49454F"
-                                            Glyph="&#xE90A;" />
+                                        <!--  Title  -->
                                         <TextBlock
-                                            Foreground="#49454F"
-                                            Style="{StaticResource BodySmall}"
-                                            Text="4" />
-                                    </StackPanel>
+                                            Grid.Row="1"
+                                            Margin="0,8,0,4"
+                                            Foreground="{ThemeResource OnSurfaceBrush}"
+                                            FontSize="18"
+                                            FontWeight="SemiBold"
+                                            Text="{Binding Title}" />
 
-                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <FontIcon
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="16"
-                                            Foreground="#49454F"
-                                            Glyph="&#xE8E1;" />
+                                        <!--  Description  -->
                                         <TextBlock
-                                            Foreground="#49454F"
-                                            Style="{StaticResource BodySmall}"
-                                            Text="12" />
-                                    </StackPanel>
+                                            Grid.Row="2"
+                                            Margin="0,0,0,12"
+                                            Foreground="{ThemeResource OnSurfaceVariantBrush}"
+                                            FontSize="15"
+                                            Text="{Binding Text}"
+                                            TextWrapping="Wrap"
+                                            MaxLines="2"
+                                            TextTrimming="CharacterEllipsis" />
 
-                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <FontIcon
-                                            FontFamily="Segoe MDL2 Assets"
-                                            FontSize="16"
-                                            Foreground="#49454F"
-                                            Glyph="&#xE8E0;" />
-                                        <TextBlock
-                                            Foreground="#49454F"
-                                            Style="{StaticResource BodySmall}"
-                                            Text="4" />
-                                    </StackPanel>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </Button>
+                                        <!--  Actions  -->
+                                        <StackPanel
+                                            Grid.Row="3"
+                                            Orientation="Horizontal"
+                                            Spacing="16">
+                                            <!-- Replies -->
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <FontIcon
+                                                    FontFamily="Segoe MDL2 Assets"
+                                                    FontSize="16"
+                                                    Foreground="#49454F"
+                                                    Glyph="&#xE90A;" />
+                                                <TextBlock
+                                                    Foreground="#49454F"
+                                                    FontSize="13"
+                                                    Text="{Binding ReplyCount}" />
+                                            </StackPanel>
 
-                    <!--  Duplicate a few for demo  -->
-                    <Border
-                        Padding="16"
-                        Background="#F7F2FA"
-                        CornerRadius="12">
-                        <TextBlock Foreground="{ThemeResource OnSurfaceBrush}" Text="Another post example" />
-                    </Border>
+                                            <!-- Upvotes -->
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <FontIcon
+                                                    FontFamily="Segoe MDL2 Assets"
+                                                    FontSize="16"
+                                                    Foreground="#4CAF50"
+                                                    Glyph="&#xE8E1;" />
+                                                <TextBlock
+                                                    Foreground="#4CAF50"
+                                                    FontSize="13"
+                                                    Text="{Binding UpvoteCount}" />
+                                            </StackPanel>
+
+                                            <!-- Downvotes -->
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <FontIcon
+                                                    FontFamily="Segoe MDL2 Assets"
+                                                    FontSize="16"
+                                                    Foreground="#F44336"
+                                                    Glyph="&#xE8E0;" />
+                                                <TextBlock
+                                                    Foreground="#F44336"
+                                                    FontSize="13"
+                                                    Text="{Binding DownvoteCount}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
                 <Border Height="100" />
@@ -304,7 +309,8 @@
             VerticalAlignment="Bottom"
             Background="#E8DEF8"
             BorderThickness="0"
-            CornerRadius="28">
+            CornerRadius="28"
+            Command="{Binding CreateNewPostCommand}">
             <TextBlock
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"

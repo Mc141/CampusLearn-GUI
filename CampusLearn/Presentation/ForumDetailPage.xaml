@@ -155,137 +155,166 @@
                       Visibility="Visible">
             <StackPanel Spacing="16">
 
-                <!-- Comment/Reply 1 (Right aligned) -->
+                <!-- Original Post Card -->
                 <Border Background="White"
-                        CornerRadius="16"
-                        Padding="16,12"
-                        MaxWidth="340"
-                        HorizontalAlignment="Right"
+                        CornerRadius="12"
+                        Padding="20"
                         BorderBrush="#E0E0E0"
                         BorderThickness="1">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="12">
+                        <!-- Post Header -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding CurrentPost.DisplayName}"
+                                       FontSize="13"
+                                       Foreground="#757575"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding CurrentPost.TimeAgo}"
+                                       FontSize="13"
+                                       Foreground="#757575"/>
+                        </Grid>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                   Text="John Doe • 2 hr ago"
-                                   FontSize="12"
-                                   Foreground="#757575"
-                                   Margin="0,0,0,4"/>
-
-                        <Button Grid.Row="0" Grid.Column="1"
-                                Width="24" Height="24"
-                                Padding="0"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                VerticalAlignment="Top">
-                            <FontIcon Glyph="&#xE712;"
-                                      FontFamily="Segoe MDL2 Assets"
-                                      FontSize="16"
-                                      Foreground="#757575"/>
-                        </Button>
-
-                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
-                                   Text="I am struggling with this topic."
-                                   FontSize="14"
-                                   Foreground="#1C1B1F"
+                        <!-- Post Title -->
+                        <TextBlock Text="{Binding CurrentPost.Title}"
+                                   FontSize="20"
+                                   FontWeight="Bold"
+                                   Foreground="{ThemeResource OnSurfaceBrush}"
                                    TextWrapping="Wrap"/>
-                    </Grid>
+
+                        <!-- Post Content -->
+                        <TextBlock Text="{Binding CurrentPost.Text}"
+                                   FontSize="15"
+                                   Foreground="#49454F"
+                                   TextWrapping="Wrap"
+                                   LineHeight="22"/>
+
+                        <!-- Divider -->
+                        <Rectangle Height="1"
+                                   Fill="#E0E0E0"
+                                   Margin="0,8"/>
+
+                        <!-- Voting Section -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Upvote Button -->
+                            <Button Grid.Column="0"
+                                    Width="80"
+                                    Height="36"
+                                    Padding="8"
+                                    Background="{Binding HasUpvoted, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#E8F5E9|Transparent'}"
+                                    BorderBrush="#4CAF50"
+                                    BorderThickness="1"
+                                    CornerRadius="18"
+                                    Command="{Binding UpvotePostCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE8E1;"
+                                              FontFamily="Segoe MDL2 Assets"
+                                              FontSize="16"
+                                              Foreground="#4CAF50"/>
+                                    <TextBlock Text="{Binding CurrentPost.UpvoteCount}"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Foreground="#4CAF50"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Downvote Button -->
+                            <Button Grid.Column="1"
+                                    Width="80"
+                                    Height="36"
+                                    Padding="8"
+                                    Margin="12,0,0,0"
+                                    Background="{Binding HasDownvoted, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FFEBEE|Transparent'}"
+                                    BorderBrush="#F44336"
+                                    BorderThickness="1"
+                                    CornerRadius="18"
+                                    Command="{Binding DownvotePostCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE8E0;"
+                                              FontFamily="Segoe MDL2 Assets"
+                                              FontSize="16"
+                                              Foreground="#F44336"/>
+                                    <TextBlock Text="{Binding CurrentPost.DownvoteCount}"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Foreground="#F44336"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Reply Count -->
+                            <StackPanel Grid.Column="3"
+                                        Orientation="Horizontal"
+                                        Spacing="6"
+                                        VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE90A;"
+                                          FontFamily="Segoe MDL2 Assets"
+                                          FontSize="16"
+                                          Foreground="#757575"/>
+                                <TextBlock FontSize="14"
+                                           Foreground="#757575">
+                                    <Run Text="{Binding CurrentPost.ReplyCount}"/>
+                                    <Run Text=" replies"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
                 </Border>
 
-                <!-- Comment/Reply 2 (Left aligned) -->
-                <Border Background="White"
-                        CornerRadius="16"
-                        Padding="16,12"
-                        MaxWidth="340"
-                        HorizontalAlignment="Left"
-                        BorderBrush="#E0E0E0"
-                        BorderThickness="1">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                <!-- Replies Header -->
+                <TextBlock Text="Replies"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource OnSurfaceBrush}"
+                           Margin="0,8,0,0"/>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                   Text="John Doe • 2 hr ago"
-                                   FontSize="12"
-                                   Foreground="#757575"
-                                   Margin="0,0,0,4"/>
+                <!-- Replies List -->
+                <ItemsControl ItemsSource="{Binding Replies}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="White"
+                                    CornerRadius="16"
+                                    Padding="16,12"
+                                    MaxWidth="500"
+                                    HorizontalAlignment="Left"
+                                    BorderBrush="#E0E0E0"
+                                    BorderThickness="1"
+                                    Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                        <Button Grid.Row="0" Grid.Column="1"
-                                Width="24" Height="24"
-                                Padding="0"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                VerticalAlignment="Top">
-                            <FontIcon Glyph="&#xE712;"
-                                      FontFamily="Segoe MDL2 Assets"
-                                      FontSize="16"
-                                      Foreground="#757575"/>
-                        </Button>
+                                    <TextBlock Grid.Row="0"
+                                               FontSize="12"
+                                               Foreground="#757575"
+                                               Margin="0,0,0,4">
+                                        <Run Text="{Binding DisplayName}"/>
+                                        <Run Text=" • "/>
+                                        <Run Text="{Binding TimeAgo}"/>
+                                    </TextBlock>
 
-                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
-                                   Text="I am struggling with this topic."
-                                   FontSize="14"
-                                   Foreground="#1C1B1F"
-                                   TextWrapping="Wrap"/>
-                    </Grid>
-                </Border>
-
-                <!-- Comment/Reply 3 (Right aligned) -->
-                <Border Background="White"
-                        CornerRadius="16"
-                        Padding="16,12"
-                        MaxWidth="340"
-                        HorizontalAlignment="Right"
-                        BorderBrush="#E0E0E0"
-                        BorderThickness="1">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                   Text="John Doe • 2 hr ago"
-                                   FontSize="12"
-                                   Foreground="#757575"
-                                   Margin="0,0,0,4"/>
-
-                        <Button Grid.Row="0" Grid.Column="1"
-                                Width="24" Height="24"
-                                Padding="0"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                VerticalAlignment="Top">
-                            <FontIcon Glyph="&#xE712;"
-                                      FontFamily="Segoe MDL2 Assets"
-                                      FontSize="16"
-                                      Foreground="#757575"/>
-                        </Button>
-
-                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
-                                   Text="I am struggling with this topic."
-                                   FontSize="14"
-                                   Foreground="#1C1B1F"
-                                   TextWrapping="Wrap"/>
-                    </Grid>
-                </Border>
+                                    <TextBlock Grid.Row="1"
+                                               Text="{Binding Text}"
+                                               FontSize="14"
+                                               Foreground="#1C1B1F"
+                                               TextWrapping="Wrap"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
             </StackPanel>
         </ScrollViewer>
