@@ -1,9 +1,10 @@
+using CampusLearn.Services;
+
 namespace CampusLearn.Presentation;
 
 public partial class MainViewModel : ObservableObject
 {
-    private IAuthenticationService _authentication;
-
+    private CampusLearn.Services.IAuthenticationService _authentication;
     private INavigator _navigator;
 
     [ObservableProperty]
@@ -12,7 +13,7 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(
         IStringLocalizer localizer,
         IOptions<AppConfig> appInfo,
-        IAuthenticationService authentication,
+        CampusLearn.Services.IAuthenticationService authentication,
         INavigator navigator)
     {
         _navigator = navigator;
@@ -23,6 +24,7 @@ public partial class MainViewModel : ObservableObject
         GoToSecond = new AsyncRelayCommand(GoToSecondView);
         Logout = new AsyncRelayCommand(DoLogout);
     }
+    
     public string? Title { get; }
 
     public ICommand GoToSecond { get; }
@@ -36,6 +38,7 @@ public partial class MainViewModel : ObservableObject
 
     public async Task DoLogout(CancellationToken token)
     {
-        await _authentication.LogoutAsync(token);
+        await _authentication.SignOutAsync();
+        await _navigator.NavigateViewModelAsync<LoginViewModel>(this, qualifier: Qualifiers.ClearBackStack);
     }
 }

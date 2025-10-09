@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using CampusLearn.Services;
 
 namespace CampusLearn;
 
@@ -36,34 +37,11 @@ public partial class App : Application
                     configBuilder.AddEnvironmentVariables();
                 })
                 .UseLocalization()
-                .UseAuthentication(auth =>
-                    auth.AddCustom(custom =>
-                        custom.Login((sp, dispatcher, credentials, cancellationToken) =>
-                        {
-                            // Stub auth: pretend login always succeeds
-                            var tokens = new Dictionary<string, string>
-                            {
-                                [TokenCacheExtensions.AccessTokenKey] = "SampleToken",
-                                ["Expiry"] = DateTime.Now.AddMinutes(30).ToString("O")
-                            };
-                            return ValueTask.FromResult<IDictionary<string, string>?>(tokens);
-                        })
-                        .Refresh((sp, tokenDictionary, cancellationToken) =>
-                        {
-                            if (tokenDictionary != null &&
-                                tokenDictionary.TryGetValue("Expiry", out var expiry) &&
-                                DateTime.TryParse(expiry, out var tokenExpiry) &&
-                                tokenExpiry > DateTime.Now)
-                            {
-                                return ValueTask.FromResult<IDictionary<string, string>?>(tokenDictionary);
-                            }
-                            return ValueTask.FromResult<IDictionary<string, string>?>(default);
-                        }),
-                        name: "StubAuth"
-                    )
-                )
                 .ConfigureServices((context, services) =>
                 {
+                    // Register our Supabase Authentication Service
+                    services.AddHttpClient<CampusLearn.Services.IAuthenticationService, SupabaseAuthService>();
+                    
                     // Example: bind AppConfig section if it exists
                     services.Configure<AppConfig>(context.Configuration.GetSection("AppConfig"));
                 })
@@ -81,12 +59,12 @@ public partial class App : Application
         Host = await builder.NavigateAsync<Shell>(
             initialNavigate: async (services, navigator) =>
             {
-                var auth = services.GetRequiredService<IAuthenticationService>();
-                var authenticated = await auth.RefreshAsync();
+                var auth = services.GetRequiredService<CampusLearn.Services.IAuthenticationService>();
+                var user = await auth.GetCurrentUserAsync();
 
-                if (authenticated)
+                if (user != null && auth.IsAuthenticated)
                 {
-                    await navigator.NavigateViewModelAsync<MainViewModel>(this, qualifier: Qualifiers.Nested);
+                    await navigator.NavigateViewModelAsync<ForumViewModel>(this, qualifier: Qualifiers.Nested);
                 }
                 else
                 {

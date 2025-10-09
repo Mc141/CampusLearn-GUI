@@ -154,4 +154,8 @@
     </Page>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FirebaseAuthentication.net" />
+  </ItemGroup>
+
 </Project>

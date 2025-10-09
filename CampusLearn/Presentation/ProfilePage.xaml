@@ -82,11 +82,17 @@
                                   VerticalAlignment="Center"/>
                     </Border>
 
-                    <TextBlock Text="Michael Scott (Student)"
+                    <TextBlock Text="{Binding UserName}"
                                FontSize="18"
                                FontWeight="SemiBold"
                                Foreground="{ThemeResource OnSurfaceBrush}"
                                HorizontalAlignment="Center"/>
+                    
+                    <TextBlock Text="{Binding UserEmail}"
+                               FontSize="14"
+                               Foreground="#49454F"
+                               HorizontalAlignment="Center"
+                               Margin="0,-8,0,0"/>
                 </StackPanel>
 
                 <!-- Divider -->
@@ -257,7 +263,8 @@
                         Background="Transparent"
                         CornerRadius="8"
                         FontSize="15"
-                        FontWeight="SemiBold"/>
+                        FontWeight="SemiBold"
+                        Command="{Binding SignOutCommand}"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>

@@ -1,23 +1,27 @@
+using CampusLearn.Services;
+
 namespace CampusLearn.Presentation;
 
 public class ShellViewModel
 {
-    private readonly IAuthenticationService _authentication;
-
-
+    private readonly CampusLearn.Services.IAuthenticationService _authentication;
     private readonly INavigator _navigator;
 
     public ShellViewModel(
-        IAuthenticationService authentication,
+        CampusLearn.Services.IAuthenticationService authentication,
         INavigator navigator)
     {
         _navigator = navigator;
         _authentication = authentication;
-        _authentication.LoggedOut += LoggedOut;
+        _authentication.AuthStateChanged += OnAuthStateChanged;
     }
 
-    private async void LoggedOut(object? sender, EventArgs e)
+    private async void OnAuthStateChanged(object? sender, AuthStateChangedEventArgs e)
     {
-        await _navigator.NavigateViewModelAsync<LoginViewModel>(this, qualifier: Qualifiers.ClearBackStack);
+        // If user logged out (not authenticated), navigate to login page
+        if (!e.IsAuthenticated)
+        {
+            await _navigator.NavigateViewModelAsync<LoginViewModel>(this, qualifier: Qualifiers.ClearBackStack);
+        }
     }
 }
