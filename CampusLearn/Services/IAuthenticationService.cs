@@ -1,3 +1,5 @@
+using Supabase.Gotrue;
+
 namespace CampusLearn.Services;
 
 public interface IAuthenticationService
@@ -20,6 +22,7 @@ public class AuthResult
     public UserProfile? User { get; set; }
     public string? AccessToken { get; set; }
     public string? RefreshToken { get; set; }
+    public bool RequiresEmailConfirmation { get; set; }
 }
 
 public class UserProfile

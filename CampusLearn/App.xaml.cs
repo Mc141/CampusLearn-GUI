@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using CampusLearn.Services;
+using CampusLearn.Presentation;
 
 namespace CampusLearn;
 
@@ -39,9 +40,12 @@ public partial class App : Application
                 .UseLocalization()
                 .ConfigureServices((context, services) =>
                 {
+                    // Register Supabase Service
+                    services.AddSingleton<SupabaseService>();
+
                     // Register our Supabase Authentication Service
-                    services.AddHttpClient<CampusLearn.Services.IAuthenticationService, SupabaseAuthService>();
-                    
+                    services.AddSingleton<CampusLearn.Services.IAuthenticationService, SupabaseAuthService>();
+
                     // Example: bind AppConfig section if it exists
                     services.Configure<AppConfig>(context.Configuration.GetSection("AppConfig"));
                 })
@@ -59,6 +63,10 @@ public partial class App : Application
         Host = await builder.NavigateAsync<Shell>(
             initialNavigate: async (services, navigator) =>
             {
+                // Initialize Supabase service
+                var supabaseService = services.GetRequiredService<SupabaseService>();
+                await supabaseService.InitializeAsync();
+
                 var auth = services.GetRequiredService<CampusLearn.Services.IAuthenticationService>();
                 var user = await auth.GetCurrentUserAsync();
 

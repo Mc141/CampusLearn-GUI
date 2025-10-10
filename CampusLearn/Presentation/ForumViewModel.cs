@@ -6,7 +6,7 @@ namespace CampusLearn.Presentation;
 public partial class ForumViewModel : ObservableObject
 {
     private readonly INavigator _navigator;
-    
+
     // Static collection to share posts across navigation
     public static ObservableCollection<ForumPost> AllPosts { get; set; } = new();
 
@@ -118,7 +118,7 @@ public partial class ForumViewModel : ObservableObject
         // Apply search filter
         if (!string.IsNullOrWhiteSpace(SearchQuery))
         {
-            filtered = filtered.Where(p => 
+            filtered = filtered.Where(p =>
                 p.Title.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ||
                 p.Text.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase));
         }
@@ -180,7 +180,7 @@ public partial class ForumViewModel : ObservableObject
     {
         // Set the post in the static property so ForumDetailViewModel can access it
         ForumDetailViewModel.SelectedPost = post;
-        
+
         // Navigate to the detail page
         await _navigator.NavigateViewModelAsync<ForumDetailViewModel>(this);
     }

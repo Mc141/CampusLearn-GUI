@@ -50,7 +50,7 @@ public partial class LoginViewModel : ObservableObject
             if (result.Success)
             {
                 StatusMessage = "Login successful!";
-                
+
                 // Navigate to Forum
                 await Task.Delay(500); // Brief delay to show success message
                 await _navigator.NavigateViewModelAsync<ForumViewModel>(this, qualifier: Qualifiers.ClearBackStack);
@@ -99,19 +99,36 @@ public partial class LoginViewModel : ObservableObject
 
             if (result.Success)
             {
-                StatusMessage = "Registration successful! Please check your email to verify your account.";
-                
-                System.Diagnostics.Debug.WriteLine($"✉️ Registration successful! Check email for verification.");
-                
-                // Clear form
-                Email = string.Empty;
-                Password = string.Empty;
-                FullName = string.Empty;
-                
-                // Switch to login mode after delay
-                await Task.Delay(2000);
-                IsLoginMode = true;
-                StatusMessage = "You can now login";
+                if (result.RequiresEmailConfirmation)
+                {
+                    StatusMessage = result.ErrorMessage ?? "Registration successful! Please check your email to verify your account.";
+
+                    System.Diagnostics.Debug.WriteLine($"✉️ Registration successful! Check email for verification.");
+
+                    // Clear form
+                    Email = string.Empty;
+                    Password = string.Empty;
+                    FullName = string.Empty;
+
+                    // Switch to login mode after delay
+                    await Task.Delay(3000);
+                    IsLoginMode = true;
+                    StatusMessage = "Please check your email and click the confirmation link, then return here to login.";
+                }
+                else
+                {
+                    StatusMessage = "Registration successful! You can now login.";
+
+                    // Clear form
+                    Email = string.Empty;
+                    Password = string.Empty;
+                    FullName = string.Empty;
+
+                    // Switch to login mode after delay
+                    await Task.Delay(2000);
+                    IsLoginMode = true;
+                    StatusMessage = "You can now login";
+                }
             }
             else
             {
@@ -137,7 +154,7 @@ public partial class LoginViewModel : ObservableObject
         IsLoginMode = !IsLoginMode;
         StatusMessage = string.Empty;
         Password = string.Empty;
-        
+
         // Explicitly notify that IsLoginMode changed (should be automatic with ObservableProperty, but just in case)
         OnPropertyChanged(nameof(IsLoginMode));
     }

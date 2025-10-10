@@ -156,6 +156,7 @@
 
   <ItemGroup>
     <PackageReference Include="FirebaseAuthentication.net" />
+    <PackageReference Include="Supabase" />
   </ItemGroup>
 
 </Project>

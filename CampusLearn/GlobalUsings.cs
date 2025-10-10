@@ -1,7 +1,6 @@
 global using System.Collections.Immutable;
 global using CampusLearn.Models;
 global using CampusLearn.Presentation;
-global using CampusLearn.Services.Endpoints;
 global using CommunityToolkit.Mvvm.ComponentModel;
 global using CommunityToolkit.Mvvm.Input;
 global using Microsoft.Extensions.DependencyInjection;
