@@ -1,15 +1,21 @@
 using System.Collections.ObjectModel;
 using Uml_Implementation.Entities;
+using CampusLearn.Services;
+using CampusLearn.Models;
 
 namespace CampusLearn.Presentation;
 
 public partial class CreatePostViewModel : ObservableObject
 {
     private readonly INavigator _navigator;
+    private readonly SupabaseService _supabaseService;
+    private readonly CampusLearn.Services.IAuthenticationService _authService;
 
-    public CreatePostViewModel(INavigator navigator)
+    public CreatePostViewModel(INavigator navigator, SupabaseService supabaseService, CampusLearn.Services.IAuthenticationService authService)
     {
         _navigator = navigator;
+        _supabaseService = supabaseService;
+        _authService = authService;
         LoadTopics();
     }
 
@@ -57,13 +63,36 @@ public partial class CreatePostViewModel : ObservableObject
             return;
         }
 
-        // Create new post object
+        // Get current user
+        var currentUser = await _authService.GetCurrentUserAsync();
+        if (currentUser == null)
+        {
+            // TODO: Show error message - user not logged in
+            return;
+        }
+
+        // Insert into database
+        var supabase = _supabaseService.GetClient();
+        var dbPost = new DbForumPost
+        {
+            Id = Guid.NewGuid(),
+            Title = PostTitle,
+            Content = PostContent,
+            UserId = Guid.Parse(currentUser.Id),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        // Simple database insert using Supabase
+        await supabase.Postgrest.Table<DbForumPost>().Insert(dbPost);
+
+        // Create new post object for UI
         var newPost = new ForumPost
         {
             PostId = new Random().Next(1000, 9999), // Temporary ID
             Title = PostTitle,
             Text = PostContent,
-            AuthorName = IsAnonymous ? "Anonymous User" : "Current User", // Replace with actual user
+            AuthorName = IsAnonymous ? "Anonymous User" : currentUser.FullName,
             AuthorUserId = 1, // Replace with actual user ID
             AnonymousFlag = IsAnonymous,
             CreatedAt = DateTime.Now,
@@ -75,9 +104,6 @@ public partial class CreatePostViewModel : ObservableObject
 
         // Add to the shared posts collection
         ForumViewModel.AllPosts.Insert(0, newPost); // Add at the beginning
-
-        // TODO: Call API to save post
-        // await _apiService.CreatePostAsync(newPost);
 
         // Navigate back to forum
         await _navigator.NavigateBackAsync(this);
