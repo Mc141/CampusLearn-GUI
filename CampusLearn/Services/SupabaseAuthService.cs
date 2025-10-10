@@ -203,7 +203,18 @@ public class SupabaseAuthService : IAuthenticationService
                 };
             }
 
-            return new AuthResult { Success = false, ErrorMessage = ex.Message };
+            // Check if the error is about invalid credentials
+            if (ex.Message.Contains("invalid_credentials") || ex.Message.Contains("Invalid login credentials"))
+            {
+                return new AuthResult
+                {
+                    Success = false,
+                    ErrorMessage = "Invalid email or password. Please check your credentials and try again."
+                };
+            }
+
+            // For any other errors, return a generic message instead of raw exception
+            return new AuthResult { Success = false, ErrorMessage = "Login failed. Please check your credentials and try again." };
         }
     }
 
