@@ -51,6 +51,9 @@ public partial class LoginViewModel : ObservableObject
             {
                 StatusMessage = "Login successful!";
 
+                // Clear the forum posts cache to force refresh
+                ForumViewModel.AllPosts.Clear();
+
                 // Navigate to Forum
                 await Task.Delay(500); // Brief delay to show success message
                 await _navigator.NavigateViewModelAsync<ForumViewModel>(this, qualifier: Qualifiers.ClearBackStack);

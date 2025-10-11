@@ -80,6 +80,28 @@ public class SupabaseAuthService : IAuthenticationService
                 {
                     System.Diagnostics.Debug.WriteLine($"✅ User authenticated immediately");
 
+                    // Create profile in database
+                    try
+                    {
+                        var supabase = _supabaseService.GetClient();
+                        var dbProfile = new CampusLearn.Models.UserProfile
+                        {
+                            Id = Guid.Parse(response.User.Id),
+                            FullName = fullName,
+                            Role = "Student",
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+
+                        await supabase.Postgrest.Table<CampusLearn.Models.UserProfile>().Insert(dbProfile);
+                        System.Diagnostics.Debug.WriteLine($"✅ Profile created in database for user {response.User.Id}");
+                    }
+                    catch (Exception profileEx)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"⚠️ Could not create profile in database: {profileEx.Message}");
+                        // Continue anyway - profile might already exist
+                    }
+
                     AuthStateChanged?.Invoke(this, new AuthStateChangedEventArgs
                     {
                         IsAuthenticated = true,
@@ -167,6 +189,40 @@ public class SupabaseAuthService : IAuthenticationService
                     EmailConfirmed = response.User.EmailConfirmedAt != null,
                     CreatedAt = response.User.CreatedAt ?? DateTime.UtcNow
                 };
+
+                // Ensure profile exists in database
+                try
+                {
+                    var supabase = _supabaseService.GetClient();
+                    var existingProfile = await supabase.Postgrest.Table<CampusLearn.Models.UserProfile>()
+                        .Filter("id", Supabase.Postgrest.Constants.Operator.Equals, Guid.Parse(response.User.Id))
+                        .Single();
+
+                    System.Diagnostics.Debug.WriteLine($"✅ Profile already exists for user {response.User.Id}");
+                }
+                catch
+                {
+                    // Profile doesn't exist, create it
+                    try
+                    {
+                        var supabase = _supabaseService.GetClient();
+                        var dbProfile = new CampusLearn.Models.UserProfile
+                        {
+                            Id = Guid.Parse(response.User.Id),
+                            FullName = _currentUser.FullName,
+                            Role = "Student",
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+
+                        await supabase.Postgrest.Table<CampusLearn.Models.UserProfile>().Insert(dbProfile);
+                        System.Diagnostics.Debug.WriteLine($"✅ Profile created in database for user {response.User.Id}");
+                    }
+                    catch (Exception profileEx)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"⚠️ Could not create profile in database: {profileEx.Message}");
+                    }
+                }
 
                 AuthStateChanged?.Invoke(this, new AuthStateChangedEventArgs
                 {

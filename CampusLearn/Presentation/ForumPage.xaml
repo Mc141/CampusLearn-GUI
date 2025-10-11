@@ -262,30 +262,44 @@
                                             </StackPanel>
 
                                             <!-- Upvotes -->
-                                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                                <FontIcon
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="16"
-                                                    Foreground="#4CAF50"
-                                                    Glyph="&#xE8E1;" />
-                                                <TextBlock
-                                                    Foreground="#4CAF50"
-                                                    FontSize="13"
-                                                    Text="{Binding UpvoteCount}" />
-                                            </StackPanel>
+                                            <Button
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Padding="4"
+                                                Command="{Binding DataContext.UpvotePostCommand, ElementName=RootPage}"
+                                                CommandParameter="{Binding}">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <FontIcon
+                                                        FontFamily="Segoe MDL2 Assets"
+                                                        FontSize="16"
+                                                        Foreground="#4CAF50"
+                                                        Glyph="&#xE8E1;" />
+                                                    <TextBlock
+                                                        Foreground="#4CAF50"
+                                                        FontSize="13"
+                                                        Text="{Binding UpvoteCount}" />
+                                                </StackPanel>
+                                            </Button>
 
                                             <!-- Downvotes -->
-                                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                                <FontIcon
-                                                    FontFamily="Segoe MDL2 Assets"
-                                                    FontSize="16"
-                                                    Foreground="#F44336"
-                                                    Glyph="&#xE8E0;" />
-                                                <TextBlock
-                                                    Foreground="#F44336"
-                                                    FontSize="13"
-                                                    Text="{Binding DownvoteCount}" />
-                                            </StackPanel>
+                                            <Button
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Padding="4"
+                                                Command="{Binding DataContext.DownvotePostCommand, ElementName=RootPage}"
+                                                CommandParameter="{Binding}">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <FontIcon
+                                                        FontFamily="Segoe MDL2 Assets"
+                                                        FontSize="16"
+                                                        Foreground="#F44336"
+                                                        Glyph="&#xE8E0;" />
+                                                    <TextBlock
+                                                        Foreground="#F44336"
+                                                        FontSize="13"
+                                                        Text="{Binding DownvoteCount}" />
+                                                </StackPanel>
+                                            </Button>
                                         </StackPanel>
                                     </Grid>
                                 </Border>

@@ -18,6 +18,21 @@ public class DbForumPost : BaseModel
     [Column("user_id")]
     public Guid UserId { get; set; }
 
+    [Column("user_name")]
+    public string UserName { get; set; } = string.Empty;
+
+    [Column("is_anonymous")]
+    public bool IsAnonymous { get; set; }
+
+    [Column("likes_count")]
+    public int LikesCount { get; set; }
+
+    [Column("dislikes_count")]
+    public int DislikesCount { get; set; }
+
+    [Column("comments_count")]
+    public int CommentsCount { get; set; }
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; }
 

@@ -79,6 +79,11 @@ public partial class CreatePostViewModel : ObservableObject
             Title = PostTitle,
             Content = PostContent,
             UserId = Guid.Parse(currentUser.Id),
+            UserName = IsAnonymous ? "Anonymous User" : (currentUser.FullName ?? "Unknown User"),
+            IsAnonymous = IsAnonymous,
+            LikesCount = 0,
+            DislikesCount = 0,
+            CommentsCount = 0,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -89,17 +94,20 @@ public partial class CreatePostViewModel : ObservableObject
         // Create new post object for UI
         var newPost = new ForumPost
         {
-            PostId = new Random().Next(1000, 9999), // Temporary ID
+            PostId = dbPost.Id.GetHashCode(), // Convert Guid to int for UI compatibility
+            DbId = dbPost.Id, // Store actual database ID
             Title = PostTitle,
             Text = PostContent,
-            AuthorName = IsAnonymous ? "Anonymous User" : currentUser.FullName,
-            AuthorUserId = 1, // Replace with actual user ID
+            AuthorName = IsAnonymous ? "Anonymous User" : currentUser.FullName ?? "Current User",
+            AuthorUserId = Guid.Parse(currentUser.Id).GetHashCode(), // Convert Guid to int
             AnonymousFlag = IsAnonymous,
-            CreatedAt = DateTime.Now,
+            CreatedAt = DateTime.UtcNow,
             UpvoteCount = 0,
             DownvoteCount = 0,
             ReplyCount = 0,
-            TopicId = SelectedTopicIndex >= 0 ? SelectedTopicIndex : 0
+            TopicId = SelectedTopicIndex >= 0 ? SelectedTopicIndex : 0,
+            IsLiked = false,
+            IsDisliked = false
         };
 
         // Add to the shared posts collection
