@@ -96,6 +96,8 @@ const TopicDetailsPage: React.FC = () => {
 
   // Load topic and questions
   useEffect(() => {
+    let isMounted = true;
+
     const loadData = async () => {
       if (!topicId) return;
 
@@ -108,9 +110,13 @@ const TopicDetailsPage: React.FC = () => {
         const currentTopic = topics.find((t) => t.id === topicId);
 
         if (!currentTopic) {
-          setError("Topic not found");
+          if (isMounted) {
+            setError("Topic not found");
+          }
           return;
         }
+
+        if (!isMounted) return;
 
         setTopic(currentTopic);
 
@@ -120,17 +126,27 @@ const TopicDetailsPage: React.FC = () => {
           tutorTopicAssignmentService.getTutorsForTopic(topicId),
         ]);
 
+        if (!isMounted) return;
+
         setQuestions(questionsData);
         setAssignedTutors(tutorsData);
       } catch (err) {
         console.error("Error loading topic details:", err);
-        setError("Failed to load topic details. Please try again.");
+        if (isMounted) {
+          setError("Failed to load topic details. Please try again.");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [topicId]);
 
   const handleAskQuestion = async () => {

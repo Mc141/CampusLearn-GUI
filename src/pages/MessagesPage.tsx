@@ -54,9 +54,39 @@ const MessagesPage: React.FC = () => {
 
   // Load conversations on component mount
   useEffect(() => {
+    let isMounted = true;
+
     if (user) {
+      const loadConversations = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+
+          const conversationsData = await messagingService.getUserConversations(
+            user.id
+          );
+
+          if (isMounted) {
+            setConversations(conversationsData);
+          }
+        } catch (err) {
+          console.error("Error loading conversations:", err);
+          if (isMounted) {
+            setError("Failed to load conversations. Please try again.");
+          }
+        } finally {
+          if (isMounted) {
+            setLoading(false);
+          }
+        }
+      };
+
       loadConversations();
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   // Load messages when conversation is selected
@@ -65,25 +95,6 @@ const MessagesPage: React.FC = () => {
       loadInitialMessages();
     }
   }, [selectedConversation, user]);
-
-  const loadConversations = async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const conversationsData = await messagingService.getUserConversations(
-        user.id
-      );
-      setConversations(conversationsData);
-    } catch (err) {
-      console.error("Error loading conversations:", err);
-      setError("Failed to load conversations. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadInitialMessages = async () => {
     if (!selectedConversation || !user) return;
@@ -113,7 +124,7 @@ const MessagesPage: React.FC = () => {
       );
 
       // Reload conversations to update unread counts
-      await loadConversations();
+      // Note: This will be handled by the parent useEffect
     } catch (err) {
       console.error("Error loading messages:", err);
       setError("Failed to load messages. Please try again.");
@@ -132,7 +143,10 @@ const MessagesPage: React.FC = () => {
       );
 
       // Reload conversations to update last message
-      await loadConversations();
+      const conversationsData = await messagingService.getUserConversations(
+        user.id
+      );
+      setConversations(conversationsData);
     } catch (err) {
       console.error("Error storing messages:", err);
     }
@@ -196,7 +210,10 @@ const MessagesPage: React.FC = () => {
       setAvailableTutors([]);
 
       // Reload conversations to show the new conversation
-      await loadConversations();
+      const conversationsData = await messagingService.getUserConversations(
+        user.id
+      );
+      setConversations(conversationsData);
     } catch (err) {
       console.error("Error creating conversation:", err);
       setError("Failed to create conversation. Please try again.");

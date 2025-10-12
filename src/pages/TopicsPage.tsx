@@ -95,6 +95,8 @@ const TopicsPage: React.FC = () => {
 
   // Load data from database
   useEffect(() => {
+    let isMounted = true;
+
     const loadData = async () => {
       try {
         setLoading(true);
@@ -104,6 +106,8 @@ const TopicsPage: React.FC = () => {
           topicsService.getAllTopics(),
           modulesService.getAllModules(),
         ]);
+
+        if (!isMounted) return;
 
         setTopics(topicsData);
         setModules(modulesData);
@@ -120,13 +124,21 @@ const TopicsPage: React.FC = () => {
         }
       } catch (err) {
         console.error("Error loading data:", err);
-        setError("Failed to load topics. Please try again.");
+        if (isMounted) {
+          setError("Failed to load topics. Please try again.");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   const filteredTopics = topics.filter((topic) => {
