@@ -86,18 +86,163 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } = await supabase.auth.getSession();
 
     if (session?.user) {
-      const basicProfile: User = {
-        id: session.user.id,
-        email: session.user.email!,
-        firstName: session.user.user_metadata?.first_name || "",
-        lastName: session.user.user_metadata?.last_name || "",
-        role: session.user.user_metadata?.role || "student",
-        studentNumber: session.user.user_metadata?.student_number,
-        modules: [],
-        createdAt: new Date(session.user.created_at),
-        lastLogin: undefined,
-      };
-      setUser(basicProfile);
+      try {
+        // First, check if user exists in database
+        const { data: existingUser, error: fetchError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", userId)
+          .single();
+
+        if (fetchError && fetchError.code === "PGRST116") {
+          // User doesn't exist in database, check if user exists by email first
+          console.log("User not found by ID, checking by email...");
+          const { data: existingByEmail, error: emailError } = await supabase
+            .from("users")
+            .select("*")
+            .eq("email", session.user.email!)
+            .single();
+
+          if (emailError && emailError.code === "PGRST116") {
+            // User doesn't exist at all, create them
+            console.log("User not found in database, creating profile...");
+            const { error: insertError } = await supabase.from("users").insert([
+              {
+                id: session.user.id,
+                email: session.user.email!,
+                first_name: session.user.user_metadata?.first_name || "",
+                last_name: session.user.user_metadata?.last_name || "",
+                role: "student", // Default to student for new users
+                student_number: session.user.user_metadata?.student_number,
+                created_at: new Date().toISOString(),
+              },
+            ]);
+
+            if (insertError) {
+              console.error("Error creating user profile:", insertError);
+              // Fallback to basic profile
+              const basicProfile: User = {
+                id: session.user.id,
+                email: session.user.email!,
+                firstName: session.user.user_metadata?.first_name || "",
+                lastName: session.user.user_metadata?.last_name || "",
+                role: "student", // Default to student
+                studentNumber: session.user.user_metadata?.student_number,
+                modules: [],
+                createdAt: new Date(session.user.created_at),
+                lastLogin: undefined,
+              };
+              setUser(basicProfile);
+            } else {
+              console.log("User profile created successfully");
+              // Now fetch the created user
+              const { data: newUser } = await supabase
+                .from("users")
+                .select("*")
+                .eq("id", userId)
+                .single();
+
+              if (newUser) {
+                const userProfile: User = {
+                  id: newUser.id,
+                  email: newUser.email,
+                  firstName: newUser.first_name,
+                  lastName: newUser.last_name,
+                  role: newUser.role,
+                  studentNumber: newUser.student_number,
+                  modules: [],
+                  createdAt: new Date(newUser.created_at),
+                  lastLogin: newUser.last_login
+                    ? new Date(newUser.last_login)
+                    : undefined,
+                };
+                setUser(userProfile);
+              }
+            }
+          } else if (existingByEmail) {
+            // User exists by email but with different ID, update the ID
+            console.log("User exists with different ID, updating ID...");
+            const { error: updateError } = await supabase
+              .from("users")
+              .update({ id: session.user.id })
+              .eq("email", session.user.email!);
+
+            if (updateError) {
+              console.error("Error updating user ID:", updateError);
+              // Use the existing user data
+              const userProfile: User = {
+                id: existingByEmail.id,
+                email: existingByEmail.email,
+                firstName: existingByEmail.first_name,
+                lastName: existingByEmail.last_name,
+                role: existingByEmail.role,
+                studentNumber: existingByEmail.student_number,
+                modules: [],
+                createdAt: new Date(existingByEmail.created_at),
+                lastLogin: existingByEmail.last_login
+                  ? new Date(existingByEmail.last_login)
+                  : undefined,
+              };
+              setUser(userProfile);
+            } else {
+              // Fetch the updated user
+              const { data: updatedUser } = await supabase
+                .from("users")
+                .select("*")
+                .eq("id", userId)
+                .single();
+
+              if (updatedUser) {
+                const userProfile: User = {
+                  id: updatedUser.id,
+                  email: updatedUser.email,
+                  firstName: updatedUser.first_name,
+                  lastName: updatedUser.last_name,
+                  role: updatedUser.role,
+                  studentNumber: updatedUser.student_number,
+                  modules: [],
+                  createdAt: new Date(updatedUser.created_at),
+                  lastLogin: updatedUser.last_login
+                    ? new Date(updatedUser.last_login)
+                    : undefined,
+                };
+                setUser(userProfile);
+              }
+            }
+          }
+        } else if (existingUser) {
+          // User exists, create profile from database data
+          const userProfile: User = {
+            id: existingUser.id,
+            email: existingUser.email,
+            firstName: existingUser.first_name,
+            lastName: existingUser.last_name,
+            role: existingUser.role,
+            studentNumber: existingUser.student_number,
+            modules: [],
+            createdAt: new Date(existingUser.created_at),
+            lastLogin: existingUser.last_login
+              ? new Date(existingUser.last_login)
+              : undefined,
+          };
+          setUser(userProfile);
+        }
+      } catch (error) {
+        console.error("Error in fetchUserProfile:", error);
+        // Fallback to basic profile
+        const basicProfile: User = {
+          id: session.user.id,
+          email: session.user.email!,
+          firstName: session.user.user_metadata?.first_name || "",
+          lastName: session.user.user_metadata?.last_name || "",
+          role: session.user.user_metadata?.role || "student",
+          studentNumber: session.user.user_metadata?.student_number,
+          modules: [],
+          createdAt: new Date(session.user.created_at),
+          lastLogin: undefined,
+        };
+        setUser(basicProfile);
+      }
     }
 
     setIsLoading(false);
@@ -143,7 +288,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     password: string
   ): Promise<boolean> => {
     try {
-      // Validate email domain
+    // Validate email domain
       if (
         !userData.email?.endsWith("@belgiumcampus.ac.za") &&
         !userData.email?.endsWith("@student.belgiumcampus.ac.za")
@@ -199,7 +344,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
 
-      return true;
+    return true;
     } catch (error) {
       console.error("Resend confirmation error:", error);
       return false;

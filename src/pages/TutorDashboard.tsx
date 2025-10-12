@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Grid,
@@ -17,6 +17,8 @@ import {
   Divider,
   LinearProgress,
   Badge,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import {
   Quiz,
@@ -33,43 +35,121 @@ import {
   People,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
-import { mockTopics, mockQuestions, mockNotifications } from "../data/mockData";
+import { useNavigate } from "react-router-dom";
+import { tutorTopicAssignmentService } from "../services/tutorTopicAssignmentService";
+import { questionsService } from "../services/questionsService";
 
 const TutorDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [managedTopics] = useState(mockTopics.slice(0, 3));
-  const [pendingQuestions] = useState(
-    mockQuestions.filter((q) => q.status === "open")
-  );
-  const [answeredQuestions] = useState(
-    mockQuestions.filter((q) => q.status === "answered")
-  );
-  const [notifications] = useState(mockNotifications.slice(0, 3));
+  const navigate = useNavigate();
+  const [assignedTopics, setAssignedTopics] = useState<any[]>([]);
+  const [pendingQuestions, setPendingQuestions] = useState<any[]>([]);
+  const [answeredQuestions, setAnsweredQuestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load tutor data
+  useEffect(() => {
+    const loadTutorData = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Load assigned topics
+        const topics = await tutorTopicAssignmentService.getTopicsForTutor(
+          user.id
+        );
+        setAssignedTopics(topics);
+
+        // Load questions for assigned topics
+        const allQuestions: any[] = [];
+        for (const topic of topics) {
+          try {
+            const questions = await questionsService.getQuestionsByTopic(
+              topic.id
+            );
+            allQuestions.push(...questions);
+          } catch (err) {
+            console.error(
+              `Error loading questions for topic ${topic.id}:`,
+              err
+            );
+          }
+        }
+
+        // Filter questions by status
+        setPendingQuestions(allQuestions.filter((q) => q.status === "open"));
+        setAnsweredQuestions(
+          allQuestions.filter((q) => q.status === "answered")
+        );
+      } catch (err) {
+        console.error("Error loading tutor data:", err);
+        setError("Failed to load tutor data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTutorData();
+  }, [user]);
 
   const stats = [
     {
       label: "Questions Answered",
-      value: 24,
+      value: answeredQuestions.length,
       icon: <CheckCircle />,
       color: "success",
     },
-    { label: "Topics Managed", value: 6, icon: <Topic />, color: "primary" },
     {
-      label: "Students Helped",
-      value: 18,
-      icon: <People />,
-      color: "secondary",
+      label: "Assigned Topics",
+      value: assignedTopics.length,
+      icon: <Topic />,
+      color: "primary",
+    },
+    {
+      label: "Pending Questions",
+      value: pendingQuestions.length,
+      icon: <Schedule />,
+      color: "warning",
     },
     {
       label: "Response Rate",
-      value: 95,
+      value:
+        answeredQuestions.length > 0
+          ? Math.round(
+              (answeredQuestions.length /
+                (answeredQuestions.length + pendingQuestions.length)) *
+                100
+            )
+          : 0,
       icon: <TrendingUp />,
-      color: "warning",
+      color: "info",
     },
   ];
 
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
         Tutor Dashboard, {user?.firstName}! 🎓
       </Typography>
@@ -127,52 +207,71 @@ const TutorDashboard: React.FC = () => {
                 </Badge>
               </Box>
               <List>
-                {pendingQuestions.map((question, index) => (
-                  <React.Fragment key={question.id}>
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemIcon>
-                        <QuestionAnswer color="warning" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={question.title}
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" color="text.secondary">
-                              {question.content.substring(0, 100)}...
-                            </Typography>
-                            <Box
-                              sx={{
-                                mt: 1,
-                                display: "flex",
-                                gap: 1,
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              {question.tags.map((tag) => (
-                                <Chip
-                                  key={tag}
-                                  label={tag}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              ))}
+                {pendingQuestions.length === 0 ? (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ p: 2 }}
+                  >
+                    No pending questions for your assigned topics.
+                  </Typography>
+                ) : (
+                  pendingQuestions.map((question, index) => (
+                    <React.Fragment key={question.id}>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          <QuestionAnswer color="warning" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={question.title}
+                          secondary={
+                            <Box>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {question.content.substring(0, 100)}...
+                              </Typography>
+                              <Box
+                                sx={{
+                                  mt: 1,
+                                  display: "flex",
+                                  gap: 1,
+                                  flexWrap: "wrap",
+                                }}
+                              >
+                                {question.tags.map((tag) => (
+                                  <Chip
+                                    key={tag}
+                                    label={tag}
+                                    size="small"
+                                    variant="outlined"
+                                  />
+                                ))}
+                              </Box>
                             </Box>
-                          </Box>
-                        }
-                      />
-                      <Button size="small" variant="contained">
-                        Answer
-                      </Button>
-                    </ListItem>
-                    {index < pendingQuestions.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
+                          }
+                        />
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() =>
+                            navigate(`/topics/${question.topicId}`)
+                          }
+                        >
+                          Answer
+                        </Button>
+                      </ListItem>
+                      {index < pendingQuestions.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))
+                )}
               </List>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Managed Topics */}
+        {/* Assigned Topics */}
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
@@ -185,53 +284,75 @@ const TutorDashboard: React.FC = () => {
                 }}
               >
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Managed Topics
+                  Assigned Topics
                 </Typography>
                 <Button
                   variant="outlined"
                   size="small"
-                  startIcon={<Add />}
-                  href="/topics"
+                  startIcon={<Topic />}
+                  onClick={() => navigate("/topics")}
                 >
-                  Create Topic
+                  View All Topics
                 </Button>
               </Box>
               <List>
-                {managedTopics.map((topic, index) => (
-                  <React.Fragment key={topic.id}>
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemIcon>
-                        <School color="primary" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={topic.title}
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" color="text.secondary">
-                              {topic.description}
-                            </Typography>
-                            <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
-                              <Chip
-                                label={topic.module}
-                                size="small"
-                                color="primary"
-                              />
-                              <Chip
-                                label={`${topic.subscribers.length} subscribers`}
-                                size="small"
-                                variant="outlined"
-                              />
+                {assignedTopics.length === 0 ? (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ p: 2 }}
+                  >
+                    No topics assigned yet. Contact an admin to get assigned to
+                    topics.
+                  </Typography>
+                ) : (
+                  assignedTopics.map((topic, index) => (
+                    <React.Fragment key={topic.id}>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          <School color="primary" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={topic.title}
+                          secondary={
+                            <Box>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {topic.description}
+                              </Typography>
+                              <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
+                                <Chip
+                                  label={topic.module_code}
+                                  size="small"
+                                  color="primary"
+                                />
+                                <Chip
+                                  label={
+                                    topic.is_active ? "Active" : "Inactive"
+                                  }
+                                  size="small"
+                                  color={
+                                    topic.is_active ? "success" : "default"
+                                  }
+                                />
+                              </Box>
                             </Box>
-                          </Box>
-                        }
-                      />
-                      <IconButton size="small">
-                        <Assignment />
-                      </IconButton>
-                    </ListItem>
-                    {index < managedTopics.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
+                          }
+                        />
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => navigate(`/topics/${topic.id}`)}
+                        >
+                          View
+                        </Button>
+                      </ListItem>
+                      {index < assignedTopics.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))
+                )}
               </List>
             </CardContent>
           </Card>
@@ -255,137 +376,107 @@ const TutorDashboard: React.FC = () => {
                 <CheckCircle color="success" />
               </Box>
               <List>
-                {answeredQuestions.map((question, index) => (
-                  <React.Fragment key={question.id}>
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemIcon>
-                        <CheckCircle color="success" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={question.title}
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" color="text.secondary">
-                              Answered {question.createdAt.toLocaleDateString()}
-                            </Typography>
-                            <Chip
-                              label="Answered"
-                              size="small"
-                              color="success"
-                              sx={{ mt: 1 }}
-                            />
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                    {index < answeredQuestions.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Notifications */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Recent Notifications
-                </Typography>
-                <IconButton size="small">
-                  <Notifications />
-                </IconButton>
-              </Box>
-              <List>
-                {notifications.map((notification, index) => (
-                  <React.Fragment key={notification.id}>
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemIcon>
-                        <Notifications
-                          color={notification.isRead ? "disabled" : "primary"}
+                {answeredQuestions.length === 0 ? (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ p: 2 }}
+                  >
+                    No answered questions yet.
+                  </Typography>
+                ) : (
+                  answeredQuestions.map((question, index) => (
+                    <React.Fragment key={question.id}>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          <CheckCircle color="success" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={question.title}
+                          secondary={
+                            <Box>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Answered{" "}
+                                {question.createdAt.toLocaleDateString()}
+                              </Typography>
+                              <Chip
+                                label="Answered"
+                                size="small"
+                                color="success"
+                                sx={{ mt: 1 }}
+                              />
+                            </Box>
+                          }
                         />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={notification.title}
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" color="text.secondary">
-                              {notification.message}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {notification.createdAt.toLocaleDateString()}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                    {index < notifications.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() =>
+                            navigate(`/topics/${question.topicId}`)
+                          }
+                        >
+                          View
+                        </Button>
+                      </ListItem>
+                      {index < answeredQuestions.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))
+                )}
               </List>
             </CardContent>
           </Card>
         </Grid>
 
         {/* Quick Actions */}
-        <Grid item xs={12}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                 Quick Actions
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6}>
                   <Button
                     fullWidth
                     variant="contained"
                     startIcon={<QuestionAnswer />}
-                    href="/questions"
+                    onClick={() => navigate("/topics")}
                     sx={{ py: 2 }}
                   >
                     Answer Questions
                   </Button>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6}>
                   <Button
                     fullWidth
                     variant="outlined"
                     startIcon={<Topic />}
-                    href="/topics"
+                    onClick={() => navigate("/topics")}
                     sx={{ py: 2 }}
                   >
-                    Manage Topics
+                    View Topics
                   </Button>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6}>
                   <Button
                     fullWidth
                     variant="outlined"
                     startIcon={<Message />}
-                    href="/messages"
+                    onClick={() => navigate("/messages")}
                     sx={{ py: 2 }}
                   >
                     View Messages
                   </Button>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6}>
                   <Button
                     fullWidth
                     variant="outlined"
                     startIcon={<Assignment />}
-                    href="/forum"
+                    onClick={() => navigate("/forum")}
                     sx={{ py: 2 }}
                   >
                     Moderate Forum

@@ -19,6 +19,10 @@ import NotificationManagementPage from "./pages/NotificationManagementPage";
 import FAQManagementPage from "./pages/FAQManagementPage";
 import TrendingTopicsPage from "./pages/TrendingTopicsPage";
 import TutorMatchingPage from "./pages/TutorMatchingPage";
+import TopicDetailsPage from "./pages/TopicDetailsPage";
+import TutorApplicationPage from "./pages/TutorApplicationPage";
+import TutorApplicationManagementPage from "./pages/TutorApplicationManagementPage";
+import TutorModuleAssignmentPage from "./pages/TutorModuleAssignmentPage";
 
 const App: React.FC = () => {
   const { user } = useAuth();
@@ -52,6 +56,7 @@ const App: React.FC = () => {
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/topics" element={<TopicsPage />} />
+        <Route path="/topics/:topicId" element={<TopicDetailsPage />} />
         <Route path="/questions" element={<QuestionsPage />} />
         <Route path="/chatbot" element={<ChatbotPage />} />
         <Route path="/tutor-registration" element={<TutorRegistrationPage />} />
@@ -60,6 +65,15 @@ const App: React.FC = () => {
         <Route path="/faq" element={<FAQManagementPage />} />
         <Route path="/trending" element={<TrendingTopicsPage />} />
         <Route path="/tutor-matching" element={<TutorMatchingPage />} />
+        <Route path="/tutor-application" element={<TutorApplicationPage />} />
+        <Route
+          path="/tutor-applications"
+          element={<TutorApplicationManagementPage />}
+        />
+        <Route
+          path="/tutor-module-assignment"
+          element={<TutorModuleAssignmentPage />}
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

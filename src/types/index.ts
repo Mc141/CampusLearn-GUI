@@ -30,6 +30,7 @@ export interface Question {
   title: string;
   content: string;
   createdAt: Date;
+  updatedAt: Date;
   isAnonymous: boolean;
   status: 'open' | 'answered' | 'closed';
   upvotes: number;
@@ -42,6 +43,7 @@ export interface Answer {
   tutorId: string;
   content: string;
   createdAt: Date;
+  updatedAt: Date;
   isAccepted: boolean;
   upvotes: number;
   attachments: Attachment[];

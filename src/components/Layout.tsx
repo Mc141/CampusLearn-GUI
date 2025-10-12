@@ -39,6 +39,7 @@ import {
   Help,
   TrendingUp,
   People,
+  PersonAdd,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -105,6 +106,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         icon: <People />,
         path: "/tutor-matching",
       });
+      baseItems.splice(2, 0, {
+        text: "Apply as Tutor",
+        icon: <School />,
+        path: "/tutor-application",
+      });
     }
 
     if (user?.role === "tutor") {
@@ -117,6 +123,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     if (user?.role === "admin") {
       baseItems.splice(1, 0, {
+        text: "Tutor Applications",
+        icon: <PersonAdd />,
+        path: "/tutor-applications",
+      });
+      baseItems.splice(2, 0, {
+        text: "Tutor Module Assignment",
+        icon: <Assignment />,
+        path: "/tutor-module-assignment",
+      });
+      baseItems.splice(3, 0, {
         text: "Admin Panel",
         icon: <School />,
         path: "/admin",

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -26,6 +26,8 @@ import {
   MenuItem,
   Tabs,
   Tab,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import {
   Add,
@@ -38,9 +40,15 @@ import {
   Remove,
   Edit,
   Delete,
+  Visibility,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
-import { mockTopics, mockModules } from "../data/mockData";
+import { useNavigate } from "react-router-dom";
+import { topicsService, TopicWithDetails } from "../services/topicsService";
+import { modulesService } from "../services/modulesService";
+import { questionsService } from "../services/questionsService";
+import { tutorTopicAssignmentService } from "../services/tutorTopicAssignmentService";
+import { Module } from "../types";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -66,51 +74,225 @@ function TabPanel(props: TabPanelProps) {
 
 const TopicsPage: React.FC = () => {
   const { user } = useAuth();
-  const [topics] = useState(mockTopics);
+  const navigate = useNavigate();
+  const [topics, setTopics] = useState<TopicWithDetails[]>([]);
+  const [modules, setModules] = useState<Module[]>([]);
   const [tabValue, setTabValue] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedModule, setSelectedModule] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newTopic, setNewTopic] = useState({
     title: "",
     description: "",
     module: "",
   });
+  const [editingTopic, setEditingTopic] = useState<TopicWithDetails | null>(
+    null
+  );
+  const [subscriptions, setSubscriptions] = useState<Set<string>>(new Set());
+
+  // Load data from database
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [topicsData, modulesData] = await Promise.all([
+          topicsService.getAllTopics(),
+          modulesService.getAllModules(),
+        ]);
+
+        setTopics(topicsData);
+        setModules(modulesData);
+
+        // Load user subscriptions
+        if (user) {
+          const subscribedTopics = await topicsService.getUserSubscribedTopics(
+            user.id
+          );
+          const subscriptionIds = new Set(
+            subscribedTopics.map((topic) => topic.id)
+          );
+          setSubscriptions(subscriptionIds);
+        }
+      } catch (err) {
+        console.error("Error loading data:", err);
+        setError("Failed to load topics. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user]);
 
   const filteredTopics = topics.filter((topic) => {
     const matchesSearch =
       topic.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       topic.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesModule = !selectedModule || topic.module === selectedModule;
+    const matchesModule =
+      !selectedModule || topic.moduleCode === selectedModule;
     return matchesSearch && matchesModule;
   });
 
   const subscribedTopics = topics.filter((topic) =>
-    topic.subscribers.includes(user?.id || "")
+    subscriptions.has(topic.id)
   );
-  const managedTopics = topics.filter((topic) =>
-    topic.tutors.includes(user?.id || "")
-  );
+  const managedTopics = topics.filter((topic) => topic.createdBy === user?.id);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
-  const handleCreateTopic = () => {
-    // In a real app, this would save to backend
-    console.log("Creating topic:", newTopic);
+  const handleCreateTopic = async () => {
+    if (!user || !newTopic.title || !newTopic.description || !newTopic.module) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const createdTopic = await topicsService.createTopic(
+        {
+          title: newTopic.title,
+          description: newTopic.description,
+          moduleCode: newTopic.module,
+        },
+        user.id
+      );
+
+      // Refresh topics list
+      const updatedTopics = await topicsService.getAllTopics();
+      setTopics(updatedTopics);
+
+      setOpenDialog(false);
+      setNewTopic({ title: "", description: "", module: "" });
+    } catch (err) {
+      console.error("Error creating topic:", err);
+      setError("Failed to create topic. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDialogSubmit = () => {
+    if (editingTopic) {
+      handleUpdateTopic();
+    } else {
+      handleCreateTopic();
+    }
+  };
+
+  const handleDialogClose = () => {
     setOpenDialog(false);
+    setEditingTopic(null);
     setNewTopic({ title: "", description: "", module: "" });
   };
 
-  const handleSubscribe = (topicId: string) => {
-    // In a real app, this would update the backend
-    console.log("Subscribing to topic:", topicId);
+  const handleSubscribe = async (topicId: string) => {
+    if (!user) return;
+
+    try {
+      await topicsService.subscribeToTopic(topicId, user.id);
+      // Update local subscription state
+      setSubscriptions((prev) => new Set([...prev, topicId]));
+      // Refresh topics list
+      const updatedTopics = await topicsService.getAllTopics();
+      setTopics(updatedTopics);
+    } catch (err) {
+      console.error("Error subscribing to topic:", err);
+      setError("Failed to subscribe to topic. Please try again.");
+    }
   };
 
-  const handleUnsubscribe = (topicId: string) => {
-    // In a real app, this would update the backend
-    console.log("Unsubscribing from topic:", topicId);
+  const handleUnsubscribe = async (topicId: string) => {
+    if (!user) return;
+
+    try {
+      await topicsService.unsubscribeFromTopic(topicId, user.id);
+      // Update local subscription state
+      setSubscriptions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(topicId);
+        return newSet;
+      });
+      // Refresh topics list
+      const updatedTopics = await topicsService.getAllTopics();
+      setTopics(updatedTopics);
+    } catch (err) {
+      console.error("Error unsubscribing from topic:", err);
+      setError("Failed to unsubscribe from topic. Please try again.");
+    }
+  };
+
+  const handleEditTopic = (topic: TopicWithDetails) => {
+    setEditingTopic(topic);
+    setNewTopic({
+      title: topic.title,
+      description: topic.description,
+      module: topic.moduleCode,
+    });
+    setOpenDialog(true);
+  };
+
+  const handleUpdateTopic = async () => {
+    if (
+      !user ||
+      !editingTopic ||
+      !newTopic.title ||
+      !newTopic.description ||
+      !newTopic.module
+    ) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await topicsService.updateTopic(editingTopic.id, user.id, {
+        title: newTopic.title,
+        description: newTopic.description,
+        moduleCode: newTopic.module,
+      });
+
+      // Refresh topics list
+      const updatedTopics = await topicsService.getAllTopics();
+      setTopics(updatedTopics);
+
+      setOpenDialog(false);
+      setEditingTopic(null);
+      setNewTopic({ title: "", description: "", module: "" });
+    } catch (err) {
+      console.error("Error updating topic:", err);
+      setError("Failed to update topic. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteTopic = async (topicId: string) => {
+    if (!user) return;
+
+    if (
+      window.confirm(
+        "Are you sure you want to delete this topic? This action cannot be undone."
+      )
+    ) {
+      try {
+        setLoading(true);
+        await topicsService.deleteTopic(topicId, user.id);
+
+        // Refresh topics list
+        const updatedTopics = await topicsService.getAllTopics();
+        setTopics(updatedTopics);
+      } catch (err) {
+        console.error("Error deleting topic:", err);
+        setError("Failed to delete topic. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const getTopicsForTab = () => {
@@ -126,8 +308,27 @@ const TopicsPage: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       <Box
         sx={{
           display: "flex",
@@ -143,6 +344,7 @@ const TopicsPage: React.FC = () => {
           variant="contained"
           startIcon={<Add />}
           onClick={() => setOpenDialog(true)}
+          disabled={loading}
         >
           Create Topic
         </Button>
@@ -174,7 +376,7 @@ const TopicsPage: React.FC = () => {
                   onChange={(e) => setSelectedModule(e.target.value)}
                 >
                   <MenuItem value="">All Modules</MenuItem>
-                  {mockModules.map((module) => (
+                  {modules.map((module) => (
                     <MenuItem key={module.id} value={module.code}>
                       {module.code} - {module.name}
                     </MenuItem>
@@ -220,7 +422,7 @@ const TopicsPage: React.FC = () => {
                             {topic.title}
                           </span>
                           <Chip
-                            label={topic.module}
+                            label={topic.moduleCode}
                             size="small"
                             color="primary"
                           />
@@ -256,13 +458,13 @@ const TopicsPage: React.FC = () => {
                           >
                             <Chip
                               icon={<People />}
-                              label={`${topic.subscribers.length} subscribers`}
+                              label={`${topic.subscriberCount} subscribers`}
                               size="small"
                               variant="outlined"
                             />
                             <Chip
                               icon={<QuestionAnswer />}
-                              label={`${topic.tutors.length} tutors`}
+                              label={`${topic.tutorCount} tutors`}
                               size="small"
                               variant="outlined"
                             />
@@ -277,7 +479,7 @@ const TopicsPage: React.FC = () => {
                       }
                     />
                     <Box sx={{ display: "flex", gap: 1 }}>
-                      {topic.subscribers.includes(user?.id || "") ? (
+                      {subscriptions.has(topic.id) ? (
                         <Button
                           size="small"
                           variant="outlined"
@@ -296,12 +498,28 @@ const TopicsPage: React.FC = () => {
                           Subscribe
                         </Button>
                       )}
-                      {topic.tutors.includes(user?.id || "") && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Visibility />}
+                        onClick={() => navigate(`/topics/${topic.id}`)}
+                      >
+                        View
+                      </Button>
+                      {topic.createdBy === user?.id && (
                         <>
-                          <IconButton size="small">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditTopic(topic)}
+                            title="Edit topic"
+                          >
                             <Edit />
                           </IconButton>
-                          <IconButton size="small">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteTopic(topic.id)}
+                            title="Delete topic"
+                          >
                             <Delete />
                           </IconButton>
                         </>
@@ -338,7 +556,7 @@ const TopicsPage: React.FC = () => {
                             {topic.title}
                           </span>
                           <Chip
-                            label={topic.module}
+                            label={topic.moduleCode}
                             size="small"
                             color="primary"
                           />
@@ -418,7 +636,7 @@ const TopicsPage: React.FC = () => {
                             {topic.title}
                           </span>
                           <Chip
-                            label={topic.module}
+                            label={topic.moduleCode}
                             size="small"
                             color="primary"
                           />
@@ -492,7 +710,9 @@ const TopicsPage: React.FC = () => {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Create New Topic</DialogTitle>
+        <DialogTitle>
+          {editingTopic ? "Edit Topic" : "Create New Topic"}
+        </DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
@@ -525,7 +745,7 @@ const TopicsPage: React.FC = () => {
                 setNewTopic((prev) => ({ ...prev, module: e.target.value }))
               }
             >
-              {mockModules.map((module) => (
+              {modules.map((module) => (
                 <MenuItem key={module.id} value={module.code}>
                   {module.code} - {module.name}
                 </MenuItem>
@@ -534,9 +754,13 @@ const TopicsPage: React.FC = () => {
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateTopic} variant="contained">
-            Create Topic
+          <Button onClick={handleDialogClose}>Cancel</Button>
+          <Button
+            onClick={handleDialogSubmit}
+            variant="contained"
+            disabled={loading}
+          >
+            {editingTopic ? "Update Topic" : "Create Topic"}
           </Button>
         </DialogActions>
       </Dialog>
