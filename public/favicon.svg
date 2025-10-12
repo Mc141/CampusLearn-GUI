@@ -1,0 +1,13 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- CL Logo -->
+  <text x="4" y="22" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#2c3e50">C</text>
+  <text x="18" y="22" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="url(#lgradient)">L</text>
+  
+  <!-- Gradient definition -->
+  <defs>
+    <linearGradient id="lgradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f39c12;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f1c40f;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>
