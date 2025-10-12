@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Get initial session
@@ -53,6 +53,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (session?.user) {
         // Fetch user profile from database
         fetchUserProfile(session.user.id);
+      } else {
+        // No session, set loading to false
+        setIsLoading(false);
       }
     });
 
@@ -70,6 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         console.log("No user session, clearing user");
         setUser(null);
+        setIsLoading(false);
         if (event === "SIGNED_OUT") {
           console.log("User signed out successfully");
         }
@@ -288,7 +292,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     password: string
   ): Promise<boolean> => {
     try {
-    // Validate email domain
+      // Validate email domain
       if (
         !userData.email?.endsWith("@belgiumcampus.ac.za") &&
         !userData.email?.endsWith("@student.belgiumcampus.ac.za")
@@ -344,7 +348,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
 
-    return true;
+      return true;
     } catch (error) {
       console.error("Resend confirmation error:", error);
       return false;
