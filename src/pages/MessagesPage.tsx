@@ -1,97 +1,229 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
   CardContent,
   Typography,
-  Button,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
   Avatar,
-  IconButton,
+  Button,
   Paper,
   Divider,
-  Grid,
-  TextField,
-  Chip,
   Badge,
+  Alert,
+  CircularProgress,
+  Grid,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
 } from "@mui/material";
-import {
-  Send,
-  AttachFile,
-  Person,
-  Message,
-  Search,
-  Add,
-  MoreVert,
-  CheckCircle,
-  Schedule,
-} from "@mui/icons-material";
+import { Message, Add } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
-import { mockMessages } from "../data/mockData";
+import { messagingService, Conversation } from "../services/messagingService";
+import { tutorTopicAssignmentService } from "../services/tutorTopicAssignmentService";
+import { topicsService } from "../services/topicsService";
+import { RealtimeChat } from "../components/RealtimeChat";
+import type { ChatMessage } from "../hooks/useRealtimeChat";
 
 const MessagesPage: React.FC = () => {
   const { user } = useAuth();
-  const [messages] = useState(mockMessages);
-  const [selectedConversation, setSelectedConversation] = useState<
-    string | null
-  >(null);
-  const [newMessage, setNewMessage] = useState("");
-  const [openNewMessage, setOpenNewMessage] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
+  const [initialMessages, setInitialMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Group messages by conversation
-  const conversations = messages.reduce((acc, message) => {
-    const otherUserId =
-      message.senderId === user?.id ? message.receiverId : message.senderId;
-    if (!acc[otherUserId]) {
-      acc[otherUserId] = [];
+  // New conversation dialog
+  const [newConversationDialogOpen, setNewConversationDialogOpen] =
+    useState(false);
+  const [availableTutors, setAvailableTutors] = useState<any[]>([]);
+  const [selectedTutor, setSelectedTutor] = useState("");
+  const [initialMessage, setInitialMessage] = useState("");
+  const [selectedTopic, setSelectedTopic] = useState("");
+  const [availableTopics, setAvailableTopics] = useState<any[]>([]);
+
+  // Load conversations on component mount
+  useEffect(() => {
+    if (user) {
+      loadConversations();
     }
-    acc[otherUserId].push(message);
-    return acc;
-  }, {} as Record<string, typeof messages>);
+  }, [user]);
 
-  // Get conversation partners
-  const conversationPartners = Object.keys(conversations).map((userId) => {
-    const conversationMessages = conversations[userId];
-    const lastMessage = conversationMessages[conversationMessages.length - 1];
-    const unreadCount = conversationMessages.filter(
-      (m) => !m.isRead && m.receiverId === user?.id
-    ).length;
+  // Load messages when conversation is selected
+  useEffect(() => {
+    if (selectedConversation && user) {
+      loadInitialMessages();
+    }
+  }, [selectedConversation, user]);
 
-    return {
-      userId,
-      lastMessage,
-      unreadCount,
-      messageCount: conversationMessages.length,
-    };
-  });
+  const loadConversations = async () => {
+    if (!user) return;
 
-  const selectedMessages = selectedConversation
-    ? conversations[selectedConversation] || []
-    : [];
+    try {
+      setLoading(true);
+      setError(null);
 
-  const handleSendMessage = () => {
-    if (newMessage.trim() && selectedConversation) {
-      // In a real app, this would send to backend
-      console.log("Sending message:", newMessage, "to:", selectedConversation);
-      setNewMessage("");
+      const conversationsData = await messagingService.getUserConversations(
+        user.id
+      );
+      setConversations(conversationsData);
+    } catch (err) {
+      console.error("Error loading conversations:", err);
+      setError("Failed to load conversations. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleNewMessage = () => {
-    // In a real app, this would open a user selection dialog
-    console.log("Starting new conversation");
-    setOpenNewMessage(false);
+  const loadInitialMessages = async () => {
+    if (!selectedConversation || !user) return;
+
+    try {
+      const messagesData = await messagingService.getMessagesBetweenUsers(
+        user.id,
+        selectedConversation.userId
+      );
+
+      // Convert messages to ChatMessage format
+      const chatMessages: ChatMessage[] = messagesData.map((msg) => {
+        const senderName =
+          msg.senderId === user.id
+            ? `${user.firstName} ${user.lastName}`
+            : selectedConversation.userName;
+
+        return messagingService.messageToChatMessage(msg, senderName);
+      });
+
+      setInitialMessages(chatMessages);
+
+      // Mark messages as read
+      await messagingService.markMessagesAsRead(
+        selectedConversation.userId,
+        user.id
+      );
+
+      // Reload conversations to update unread counts
+      await loadConversations();
+    } catch (err) {
+      console.error("Error loading messages:", err);
+      setError("Failed to load messages. Please try again.");
+    }
   };
+
+  const handleMessageUpdate = async (messages: ChatMessage[]) => {
+    if (!selectedConversation || !user) return;
+
+    try {
+      // Store messages in database
+      await messagingService.storeMessages(
+        messages,
+        user.id,
+        selectedConversation.userId
+      );
+
+      // Reload conversations to update last message
+      await loadConversations();
+    } catch (err) {
+      console.error("Error storing messages:", err);
+    }
+  };
+
+  const handleStartNewConversation = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+
+      // Load available topics for the user
+      const topics = await topicsService.getAllTopics();
+      setAvailableTopics(topics);
+
+      // Load available tutors for selected topic
+      if (selectedTopic) {
+        const tutors = await tutorTopicAssignmentService.getTutorsForTopic(
+          selectedTopic
+        );
+        setAvailableTutors(tutors);
+      }
+
+      setNewConversationDialogOpen(true);
+    } catch (err) {
+      console.error("Error loading data for new conversation:", err);
+      setError("Failed to load data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTopicChange = async (topicId: string) => {
+    setSelectedTopic(topicId);
+    setSelectedTutor("");
+
+    try {
+      const tutors = await tutorTopicAssignmentService.getTutorsForTopic(
+        topicId
+      );
+      setAvailableTutors(tutors);
+    } catch (err) {
+      console.error("Error loading tutors for topic:", err);
+    }
+  };
+
+  const handleCreateConversation = async () => {
+    if (!user || !selectedTutor || !initialMessage.trim()) return;
+
+    try {
+      await messagingService.sendMessage({
+        senderId: user.id,
+        receiverId: selectedTutor,
+        content: initialMessage.trim(),
+      });
+
+      setNewConversationDialogOpen(false);
+      setSelectedTutor("");
+      setInitialMessage("");
+      setSelectedTopic("");
+      setAvailableTutors([]);
+
+      // Reload conversations to show the new conversation
+      await loadConversations();
+    } catch (err) {
+      console.error("Error creating conversation:", err);
+      setError("Failed to create conversation. Please try again.");
+    }
+  };
+
+  if (loading && conversations.length === 0) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       <Box
         sx={{
           display: "flex",
@@ -106,9 +238,9 @@ const MessagesPage: React.FC = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setOpenNewMessage(true)}
+          onClick={handleStartNewConversation}
         >
-          New Message
+          New Conversation
         </Button>
       </Box>
 
@@ -116,47 +248,47 @@ const MessagesPage: React.FC = () => {
         {/* Conversations List */}
         <Grid item xs={12} md={4}>
           <Card sx={{ height: "100%" }}>
-            <CardContent
-              sx={{
-                p: 0,
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-                <TextField
-                  fullWidth
-                  placeholder="Search conversations..."
-                  size="small"
-                  InputProps={{
-                    startAdornment: (
-                      <Search sx={{ mr: 1, color: "text.secondary" }} />
-                    ),
-                  }}
-                />
-              </Box>
-              <Box sx={{ flex: 1, overflow: "auto" }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Conversations ({conversations.length})
+              </Typography>
+
+              {conversations.length === 0 ? (
+                <Paper sx={{ p: 4, textAlign: "center" }}>
+                  <Message
+                    sx={{ fontSize: 60, color: "text.secondary", mb: 2 }}
+                  />
+                  <Typography
+                    variant="h6"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
+                    No conversations yet
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Start a conversation with a tutor to get help with your
+                    studies.
+                  </Typography>
+                </Paper>
+              ) : (
                 <List>
-                  {conversationPartners.map((partner, index) => (
-                    <React.Fragment key={partner.userId}>
+                  {conversations.map((conversation, index) => (
+                    <React.Fragment key={conversation.userId}>
                       <ListItem
                         button
-                        selected={selectedConversation === partner.userId}
-                        onClick={() => setSelectedConversation(partner.userId)}
-                        sx={{ py: 2 }}
+                        onClick={() => setSelectedConversation(conversation)}
+                        selected={
+                          selectedConversation?.userId === conversation.userId
+                        }
+                        sx={{ borderRadius: 1, mb: 1 }}
                       >
                         <ListItemIcon>
                           <Badge
-                            badgeContent={partner.unreadCount}
+                            badgeContent={conversation.unreadCount}
                             color="error"
                           >
-                            <Avatar>
-                              {partner.userId === "1"
-                                ? "JD"
-                                : partner.userId === "2"
-                                ? "JS"
-                                : "U"}
+                            <Avatar sx={{ bgcolor: "primary.main" }}>
+                              {conversation.userName[0]}
                             </Avatar>
                           </Badge>
                         </ListItemIcon>
@@ -165,240 +297,89 @@ const MessagesPage: React.FC = () => {
                             <Box
                               sx={{
                                 display: "flex",
-                                justifyContent: "space-between",
                                 alignItems: "center",
+                                gap: 1,
                               }}
                             >
-                              <span
-                                style={{ fontWeight: 500, fontSize: "1rem" }}
+                              <Typography
+                                variant="subtitle1"
+                                sx={{ fontWeight: 500 }}
                               >
-                                {partner.userId === "1"
-                                  ? "John Doe"
-                                  : partner.userId === "2"
-                                  ? "Jane Smith"
-                                  : "User"}
-                              </span>
-                              <span
-                                style={{
-                                  fontSize: "0.75rem",
-                                  color: "inherit",
-                                  opacity: 0.7,
-                                }}
-                              >
-                                {partner.lastMessage.createdAt.toLocaleDateString()}
-                              </span>
+                                {conversation.userName}
+                              </Typography>
+                              {conversation.topicTitle && (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  • {conversation.topicTitle}
+                                </Typography>
+                              )}
                             </Box>
                           }
                           secondary={
-                            <Box>
-                              <div
-                                style={{
+                            conversation.lastMessage && (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{
                                   overflow: "hidden",
                                   textOverflow: "ellipsis",
                                   whiteSpace: "nowrap",
-                                  maxWidth: 200,
-                                  fontSize: "0.875rem",
-                                  color: "inherit",
-                                  opacity: 0.7,
                                 }}
                               >
-                                {partner.lastMessage.content}
-                              </div>
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                  mt: 0.5,
-                                }}
-                              >
-                                <Chip
-                                  label={`${partner.messageCount} messages`}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                                {partner.unreadCount > 0 && (
-                                  <Chip
-                                    label={`${partner.unreadCount} unread`}
-                                    size="small"
-                                    color="error"
-                                  />
-                                )}
-                              </Box>
-                            </Box>
+                                {conversation.lastMessage.content}
+                              </Typography>
+                            )
                           }
                         />
-                        <IconButton size="small">
-                          <MoreVert />
-                        </IconButton>
                       </ListItem>
-                      {index < conversationPartners.length - 1 && <Divider />}
+                      {index < conversations.length - 1 && <Divider />}
                     </React.Fragment>
                   ))}
                 </List>
-              </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Message Thread */}
+        {/* Chat Area */}
         <Grid item xs={12} md={8}>
           <Card
             sx={{ height: "100%", display: "flex", flexDirection: "column" }}
           >
             {selectedConversation ? (
               <>
-                {/* Message Header */}
+                {/* Chat Header */}
                 <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <Avatar>
-                        {selectedConversation === "1"
-                          ? "JD"
-                          : selectedConversation === "2"
-                          ? "JS"
-                          : "U"}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                          {selectedConversation === "1"
-                            ? "John Doe"
-                            : selectedConversation === "2"
-                            ? "Jane Smith"
-                            : "User"}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {selectedConversation === "1"
-                            ? "Student"
-                            : selectedConversation === "2"
-                            ? "Tutor"
-                            : "User"}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                      <IconButton size="small">
-                        <AttachFile />
-                      </IconButton>
-                      <IconButton size="small">
-                        <MoreVert />
-                      </IconButton>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Avatar sx={{ bgcolor: "primary.main" }}>
+                      {selectedConversation.userName[0]}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                        {selectedConversation.userName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {selectedConversation.userEmail}
+                      </Typography>
                     </Box>
                   </Box>
                 </Box>
 
-                {/* Messages */}
-                <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
-                  {selectedMessages.map((message, index) => (
-                    <Box
-                      key={message.id}
-                      sx={{
-                        display: "flex",
-                        justifyContent:
-                          message.senderId === user?.id
-                            ? "flex-end"
-                            : "flex-start",
-                        mb: 2,
-                      }}
-                    >
-                      <Paper
-                        sx={{
-                          p: 2,
-                          maxWidth: "70%",
-                          bgcolor:
-                            message.senderId === user?.id
-                              ? "primary.main"
-                              : "grey.100",
-                          color:
-                            message.senderId === user?.id
-                              ? "white"
-                              : "text.primary",
-                        }}
-                      >
-                        <Typography variant="body1">
-                          {message.content}
-                        </Typography>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            mt: 1,
-                          }}
-                        >
-                          <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                            {message.createdAt.toLocaleTimeString()}
-                          </Typography>
-                          {message.senderId === user?.id && (
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 0.5,
-                              }}
-                            >
-                              {message.isRead ? (
-                                <CheckCircle fontSize="small" />
-                              ) : (
-                                <Schedule fontSize="small" />
-                              )}
-                            </Box>
-                          )}
-                        </Box>
-                        {message.attachments &&
-                          message.attachments.length > 0 && (
-                            <Box sx={{ mt: 1 }}>
-                              {message.attachments.map((attachment) => (
-                                <Chip
-                                  key={attachment.id}
-                                  label={attachment.name}
-                                  size="small"
-                                  icon={<AttachFile />}
-                                  sx={{ mr: 1, mb: 1 }}
-                                />
-                              ))}
-                            </Box>
-                          )}
-                      </Paper>
-                    </Box>
-                  ))}
-                </Box>
-
-                {/* Message Input */}
-                <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-                  <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-                    <TextField
-                      fullWidth
-                      multiline
-                      maxRows={4}
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
+                {/* RealtimeChat Component */}
+                <Box sx={{ flex: 1 }}>
+                  {user && (
+                    <RealtimeChat
+                      roomName={messagingService.generateRoomName(
+                        user.id,
+                        selectedConversation.userId
+                      )}
+                      username={`${user.firstName} ${user.lastName}`}
+                      messages={initialMessages}
+                      onMessage={handleMessageUpdate}
                     />
-                    <IconButton>
-                      <AttachFile />
-                    </IconButton>
-                    <Button
-                      variant="contained"
-                      onClick={handleSendMessage}
-                      disabled={!newMessage.trim()}
-                      startIcon={<Send />}
-                    >
-                      Send
-                    </Button>
-                  </Box>
+                  )}
                 </Box>
               </>
             ) : (
@@ -412,10 +393,17 @@ const MessagesPage: React.FC = () => {
               >
                 <Box sx={{ textAlign: "center" }}>
                   <Message
-                    sx={{ fontSize: 64, color: "text.secondary", mb: 2 }}
+                    sx={{ fontSize: 60, color: "text.secondary", mb: 2 }}
                   />
-                  <Typography variant="h6" color="text.secondary">
-                    Select a conversation to start messaging
+                  <Typography
+                    variant="h6"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
+                    Select a conversation
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Choose a conversation from the list to start messaging.
                   </Typography>
                 </Box>
               </Box>
@@ -424,42 +412,68 @@ const MessagesPage: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* New Message Dialog */}
+      {/* New Conversation Dialog */}
       <Dialog
-        open={openNewMessage}
-        onClose={() => setOpenNewMessage(false)}
+        open={newConversationDialogOpen}
+        onClose={() => setNewConversationDialogOpen(false)}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle>Start New Conversation</DialogTitle>
         <DialogContent>
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Select Topic</InputLabel>
+            <Select
+              value={selectedTopic}
+              label="Select Topic"
+              onChange={(e) => handleTopicChange(e.target.value)}
+            >
+              {availableTopics.map((topic) => (
+                <MenuItem key={topic.id} value={topic.id}>
+                  {topic.title} ({topic.moduleCode})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Select Tutor</InputLabel>
+            <Select
+              value={selectedTutor}
+              label="Select Tutor"
+              onChange={(e) => setSelectedTutor(e.target.value)}
+              disabled={!selectedTopic}
+            >
+              {availableTutors.map((tutor) => (
+                <MenuItem key={tutor.id} value={tutor.id}>
+                  {tutor.firstName} {tutor.lastName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           <TextField
             fullWidth
-            label="Search users..."
+            multiline
+            rows={4}
+            label="Initial Message"
+            value={initialMessage}
+            onChange={(e) => setInitialMessage(e.target.value)}
             margin="normal"
-            InputProps={{
-              startAdornment: (
-                <Search sx={{ mr: 1, color: "text.secondary" }} />
-              ),
-            }}
+            placeholder="Introduce yourself and explain what help you need..."
           />
-          <List>
-            <ListItem button onClick={() => setSelectedConversation("1")}>
-              <ListItemIcon>
-                <Avatar>JD</Avatar>
-              </ListItemIcon>
-              <ListItemText primary="John Doe" secondary="Student" />
-            </ListItem>
-            <ListItem button onClick={() => setSelectedConversation("2")}>
-              <ListItemIcon>
-                <Avatar>JS</Avatar>
-              </ListItemIcon>
-              <ListItemText primary="Jane Smith" secondary="Tutor" />
-            </ListItem>
-          </List>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenNewMessage(false)}>Cancel</Button>
+          <Button onClick={() => setNewConversationDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateConversation}
+            variant="contained"
+            disabled={!selectedTutor || !initialMessage.trim()}
+          >
+            Start Conversation
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

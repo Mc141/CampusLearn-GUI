@@ -59,6 +59,7 @@ import {
   TutorWithDetails,
 } from "../services/tutorTopicAssignmentService";
 import TutorAssignmentDialog from "../components/TutorAssignmentDialog";
+import { messagingService } from "../services/messagingService";
 
 const TopicDetailsPage: React.FC = () => {
   const { user } = useAuth();
@@ -263,6 +264,24 @@ const TopicDetailsPage: React.FC = () => {
     }
   };
 
+  const handleStartConversation = async (tutorId: string) => {
+    if (!user || !topic) return;
+
+    try {
+      await messagingService.sendMessage({
+        senderId: user.id,
+        receiverId: tutorId,
+        content: `Hi! I need help with the topic "${topic.title}". Could you please assist me?`,
+      });
+
+      // Navigate to messages page
+      navigate("/messages");
+    } catch (err) {
+      console.error("Error starting conversation:", err);
+      setError("Failed to start conversation. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <Box
@@ -365,12 +384,26 @@ const TopicDetailsPage: React.FC = () => {
                   </Typography>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                     {assignedTutors.map((tutor) => (
-                      <Chip
+                      <Box
                         key={tutor.id}
-                        label={`${tutor.firstName} ${tutor.lastName}`}
-                        size="small"
-                        variant="outlined"
-                      />
+                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                      >
+                        <Chip
+                          label={`${tutor.firstName} ${tutor.lastName}`}
+                          size="small"
+                          variant="outlined"
+                        />
+                        {user?.role === "student" && (
+                          <Button
+                            size="small"
+                            variant="text"
+                            onClick={() => handleStartConversation(tutor.id)}
+                            sx={{ minWidth: "auto", p: 0.5 }}
+                          >
+                            Message
+                          </Button>
+                        )}
+                      </Box>
                     ))}
                   </Box>
                 </>
