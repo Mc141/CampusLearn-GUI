@@ -60,7 +60,14 @@ const RegisterPage: React.FC = () => {
     try {
       const success = await register(formData, formData.password);
       if (success) {
-        navigate("/");
+        // Redirect to login page with confirmation message
+        navigate("/login", {
+          state: {
+            message:
+              "Registration successful! Please check your email and click the confirmation link to activate your account.",
+            email: formData.email,
+          },
+        });
       } else {
         setError("Registration failed. Please check your email domain.");
       }
@@ -139,8 +146,8 @@ const RegisterPage: React.FC = () => {
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   required
-                  placeholder="your.email@belgiumcampus.ac.za"
-                  helperText="Must use @belgiumcampus.ac.za email"
+                  placeholder="577963@student.belgiumcampus.ac.za"
+                  helperText="Must use @belgiumcampus.ac.za or @student.belgiumcampus.ac.za email"
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -207,14 +214,14 @@ const RegisterPage: React.FC = () => {
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                         {selected.map((value) => (
                           <Typography key={value} variant="body2">
-                            {mockModules.find((m) => m.id === value)?.code}
+                            {mockModules.find((m) => m.code === value)?.code}
                           </Typography>
                         ))}
                       </Box>
                     )}
                   >
                     {mockModules.map((module) => (
-                      <MenuItem key={module.id} value={module.id}>
+                      <MenuItem key={module.id} value={module.code}>
                         {module.code} - {module.name}
                       </MenuItem>
                     ))}

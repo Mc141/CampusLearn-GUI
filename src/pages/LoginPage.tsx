@@ -14,27 +14,57 @@ import {
 } from "@mui/material";
 import { School, Login as LoginIcon } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [successMessage, setSuccessMessage] = useState("");
+  const [showResendButton, setShowResendButton] = useState(false);
+  const { login, resendConfirmation } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for success message from registration
+  React.useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      if (location.state.email) {
+        setEmail(location.state.email);
+      }
+      // Clear the state to prevent the message from persisting
+      window.history.replaceState({}, document.title);
+
+      // Auto-dismiss success message after 10 seconds
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+      }, 10000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccessMessage(""); // Clear success message on login attempt
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (success) {
-        navigate("/");
+      const result = await login(email, password);
+      if (result.success) {
+        // Small delay to ensure auth state is updated
+        setTimeout(() => {
+          navigate("/", { replace: true });
+        }, 100);
       } else {
-        setError("Invalid email or password");
+        setError(result.error || "Login failed");
+        // Show resend button if email not confirmed
+        if (result.error?.includes("confirmation link")) {
+          setShowResendButton(true);
+        }
       }
     } catch (err) {
       setError("An error occurred during login");
@@ -43,9 +73,24 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const handleResendConfirmation = async () => {
+    setError(""); // Clear any existing errors
+    try {
+      const success = await resendConfirmation(email);
+      if (success) {
+        setSuccessMessage("Confirmation email sent! Please check your inbox.");
+        setShowResendButton(false);
+      } else {
+        setError("Failed to send confirmation email. Please try again.");
+      }
+    } catch (err) {
+      setError("An error occurred while sending confirmation email.");
+    }
+  };
+
   const demoAccounts = [
     {
-      email: "student@belgiumcampus.ac.za",
+      email: "577963@student.belgiumcampus.ac.za",
       password: "password",
       role: "Student",
     },
@@ -115,6 +160,11 @@ const LoginPage: React.FC = () => {
               required
               autoComplete="current-password"
             />
+            {successMessage && (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                {successMessage}
+              </Alert>
+            )}
             {error && (
               <Alert severity="error" sx={{ mt: 2 }}>
                 {error}
@@ -131,6 +181,17 @@ const LoginPage: React.FC = () => {
             >
               {isLoading ? "Signing In..." : "Sign In"}
             </Button>
+            {showResendButton && (
+              <Button
+                fullWidth
+                variant="outlined"
+                size="large"
+                onClick={handleResendConfirmation}
+                sx={{ mb: 2 }}
+              >
+                Resend Confirmation Email
+              </Button>
+            )}
           </form>
 
           <Box sx={{ textAlign: "center", mt: 2 }}>

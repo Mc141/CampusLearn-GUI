@@ -497,5 +497,3 @@ const FAQManagementPage: React.FC = () => {
 };
 
 export default FAQManagementPage;
-
-

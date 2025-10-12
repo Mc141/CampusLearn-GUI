@@ -1,6 +1,5 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Box, CircularProgress } from "@mui/material";
 import { useAuth } from "./context/AuthContext";
 import Layout from "./components/Layout";
 import LoginPage from "./pages/LoginPage";
@@ -22,20 +21,7 @@ import TrendingTopicsPage from "./pages/TrendingTopicsPage";
 import TutorMatchingPage from "./pages/TutorMatchingPage";
 
 const App: React.FC = () => {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const { user } = useAuth();
 
   if (!user) {
     return (

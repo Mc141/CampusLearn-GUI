@@ -74,9 +74,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
-    logout();
-    handleProfileMenuClose();
+  const handleLogout = async () => {
+    console.log("Logout button clicked");
+    try {
+      await logout();
+      console.log("Logout successful");
+      handleProfileMenuClose();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const getNavigationItems = () => {
