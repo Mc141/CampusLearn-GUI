@@ -40,6 +40,7 @@ import {
   TrendingUp,
   People,
   PersonAdd,
+  AdminPanelSettings,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -123,11 +124,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     if (user?.role === "admin") {
       baseItems.splice(1, 0, {
+        text: "Forum Moderation",
+        icon: <AdminPanelSettings />,
+        path: "/forum/moderation",
+      });
+      baseItems.splice(2, 0, {
         text: "Tutor Applications",
         icon: <PersonAdd />,
         path: "/tutor-applications",
       });
-      baseItems.splice(2, 0, {
+      baseItems.splice(3, 0, {
         text: "Tutor Module Assignment",
         icon: <Assignment />,
         path: "/tutor-module-assignment",
