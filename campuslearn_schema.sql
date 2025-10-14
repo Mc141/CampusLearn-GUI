@@ -316,6 +316,18 @@ CREATE INDEX idx_resources_uploaded_by ON resources(uploaded_by);
 CREATE INDEX idx_resources_type ON resources(type);
 
 -- ==============================================
+-- UTILITY FUNCTIONS
+-- ==============================================
+
+-- Function to increment upvotes for any table
+CREATE OR REPLACE FUNCTION increment_upvotes(table_name TEXT, row_id UUID)
+RETURNS VOID AS $$
+BEGIN
+    EXECUTE format('UPDATE %I SET upvotes = upvotes + 1 WHERE id = $1', table_name) USING row_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==============================================
 -- TRIGGERS FOR UPDATED_AT
 -- ==============================================
 

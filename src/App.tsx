@@ -9,6 +9,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import TutorDashboard from "./pages/TutorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ForumPage from "./pages/ForumPage";
+import PostDetailsPage from "./pages/PostDetailsPage";
 import MessagesPage from "./pages/MessagesPage";
 import ProfilePage from "./pages/ProfilePage";
 import TopicsPage from "./pages/TopicsPage";
@@ -68,6 +69,7 @@ const App: React.FC = () => {
           }
         />
         <Route path="/forum" element={<ForumPage />} />
+        <Route path="/forum/post/:postId" element={<PostDetailsPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/topics" element={<TopicsPage />} />
