@@ -135,22 +135,24 @@ export const ChatFileUpload: React.FC<ChatFileUploadProps> = ({
     <Box sx={{ position: "relative" }}>
       {/* File Upload Button */}
       <Tooltip title="Attach files (images, PDFs, videos, audio)">
-        <IconButton
-          onClick={handleFileSelect}
-          disabled={disabled || uploading}
-          color="primary"
-          size="small"
-          sx={{
-            opacity: disabled ? 0.5 : 1,
-            transition: "all 0.2s ease",
-            "&:hover": {
-              backgroundColor: "primary.light",
-              transform: "scale(1.05)",
-            },
-          }}
-        >
-          <AttachFile />
-        </IconButton>
+        <span>
+          <IconButton
+            onClick={handleFileSelect}
+            disabled={disabled || uploading}
+            color="primary"
+            size="small"
+            sx={{
+              opacity: disabled ? 0.5 : 1,
+              transition: "all 0.2s ease",
+              "&:hover": {
+                backgroundColor: "primary.light",
+                transform: "scale(1.05)",
+              },
+            }}
+          >
+            <AttachFile />
+          </IconButton>
+        </span>
       </Tooltip>
 
       {/* Hidden file input */}
@@ -262,4 +264,3 @@ export const ChatFileUpload: React.FC<ChatFileUploadProps> = ({
     </Box>
   );
 };
-

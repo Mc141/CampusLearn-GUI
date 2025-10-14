@@ -16,6 +16,7 @@
     "@mui/icons-material": "^5.14.19",
     "@mui/material": "^5.14.20",
     "@mui/x-data-grid": "^6.18.2",
+    "@types/uuid": "^11.0.0",
     "date-fns": "^2.30.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -23,6 +24,7 @@
     "react-hook-form": "^7.48.2",
     "react-router-dom": "^6.20.1",
     "recharts": "^2.8.0",
+    "uuid": "^13.0.0",
     "yup": "^1.3.3"
   },
   "devDependencies": {

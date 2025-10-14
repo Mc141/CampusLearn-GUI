@@ -57,29 +57,63 @@ const TutorApplicationPage: React.FC = () => {
 
   // Load modules and check for pending applications
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
     const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const [modulesData, pendingApplication] = await Promise.all([
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error("Request timeout - please try again"));
+          }, 10000); // 10 second timeout
+        });
+
+        const dataPromise = Promise.all([
           modulesService.getAllModules(),
           tutorApplicationService.hasPendingApplication(user?.id || ""),
         ]);
 
-        setModules(modulesData);
-        setHasPendingApplication(pendingApplication);
+        const [modulesData, pendingApplication] = (await Promise.race([
+          dataPromise,
+          timeoutPromise,
+        ])) as [any, any];
+
+        clearTimeout(timeoutId);
+
+        if (isMounted) {
+          setModules(modulesData);
+          setHasPendingApplication(pendingApplication);
+        }
       } catch (err) {
         console.error("Error loading data:", err);
-        setError("Failed to load application data. Please try again.");
+        if (isMounted) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load application data. Please try again."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     if (user) {
       loadData();
     }
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [user]);
 
   const handleInputChange = (

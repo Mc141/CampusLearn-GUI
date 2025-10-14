@@ -97,6 +97,7 @@ const TopicDetailsPage: React.FC = () => {
   // Load topic and questions
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
 
     const loadData = async () => {
       if (!topicId) return;
@@ -105,35 +106,49 @@ const TopicDetailsPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // Load topic details
-        const topics = await topicsService.getAllTopics();
-        const currentTopic = topics.find((t) => t.id === topicId);
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error("Request timeout - please try again"));
+          }, 10000); // 10 second timeout
+        });
 
-        if (!currentTopic) {
-          if (isMounted) {
-            setError("Topic not found");
+        const dataPromise = (async () => {
+          // Load topic details
+          const topics = await topicsService.getAllTopics();
+          const currentTopic = topics.find((t) => t.id === topicId);
+
+          if (!currentTopic) {
+            throw new Error("Topic not found");
           }
-          return;
-        }
 
-        if (!isMounted) return;
+          if (!isMounted) return null;
 
-        setTopic(currentTopic);
+          setTopic(currentTopic);
 
-        // Load questions and assigned tutors for this topic
-        const [questionsData, tutorsData] = await Promise.all([
-          questionsService.getQuestionsByTopic(topicId),
-          tutorTopicAssignmentService.getTutorsForTopic(topicId),
-        ]);
+          // Load questions and assigned tutors for this topic
+          const [questionsData, tutorsData] = await Promise.all([
+            questionsService.getQuestionsByTopic(topicId),
+            tutorTopicAssignmentService.getTutorsForTopic(topicId),
+          ]);
 
-        if (!isMounted) return;
+          if (!isMounted) return null;
 
-        setQuestions(questionsData);
-        setAssignedTutors(tutorsData);
+          setQuestions(questionsData);
+          setAssignedTutors(tutorsData);
+          return currentTopic;
+        })();
+
+        await Promise.race([dataPromise, timeoutPromise]);
+        clearTimeout(timeoutId);
       } catch (err) {
         console.error("Error loading topic details:", err);
         if (isMounted) {
-          setError("Failed to load topic details. Please try again.");
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load topic details. Please try again."
+          );
         }
       } finally {
         if (isMounted) {
@@ -146,6 +161,9 @@ const TopicDetailsPage: React.FC = () => {
 
     return () => {
       isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [topicId]);
 

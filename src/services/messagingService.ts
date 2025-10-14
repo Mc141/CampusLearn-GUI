@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, dbQuery } from '../lib/supabase';
 import type { ChatMessage } from '../hooks/useRealtimeChat';
 
 export interface Message {
@@ -59,7 +59,8 @@ export const messagingService = {
           )
         `)
         .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200); // Limit to prevent huge queries
 
       if (error) {
         console.error('Error fetching messages:', error);
@@ -132,14 +133,15 @@ export const messagingService = {
           )
         `)
         .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(100); // Limit to prevent huge queries
 
       if (error) {
         console.error('Error fetching messages:', error);
         throw error;
       }
 
-      const messages = data.map(msg => ({
+      return data.map(msg => ({
         id: msg.id,
         senderId: msg.sender_id,
         receiverId: msg.receiver_id,
@@ -155,9 +157,6 @@ export const messagingService = {
           uploadedAt: new Date(att.attachment.uploaded_at),
         })) || [],
       }));
-
-      console.log('Loaded messages with attachments:', messages);
-      return messages;
     } catch (error) {
       console.error('Error in getMessagesBetweenUsers:', error);
       throw error;
@@ -337,8 +336,6 @@ export const messagingService = {
       // Handle attachments if they exist
       for (const message of messages) {
         if (message.attachments && message.attachments.length > 0) {
-          console.log('Storing attachments for message:', message.id, message.attachments);
-          
           // Store attachments
           const attachmentsToStore = message.attachments.map(att => ({
             id: att.id,
@@ -349,8 +346,6 @@ export const messagingService = {
             uploaded_by: senderId,
             uploaded_at: att.uploadedAt.toISOString(),
           }));
-
-          console.log('Attachments to store:', attachmentsToStore);
 
           // Insert attachments (ignore duplicates)
           const { error: attachmentError } = await supabase
@@ -363,8 +358,6 @@ export const messagingService = {
           if (attachmentError) {
             console.error('Error storing attachments:', attachmentError);
             // Don't throw here, just log the error
-          } else {
-            console.log('Attachments stored successfully');
           }
 
           // Link attachments to message
@@ -372,8 +365,6 @@ export const messagingService = {
             message_id: message.id,
             attachment_id: att.id,
           }));
-
-          console.log('Message attachments to link:', messageAttachments);
 
           const { error: linkError } = await supabase
             .from('message_attachments')
@@ -385,8 +376,6 @@ export const messagingService = {
           if (linkError) {
             console.error('Error linking attachments to message:', linkError);
             // Don't throw here, just log the error
-          } else {
-            console.log('Message attachments linked successfully');
           }
         }
       }

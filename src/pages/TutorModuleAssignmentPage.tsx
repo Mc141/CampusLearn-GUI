@@ -61,39 +61,88 @@ const TutorModuleAssignmentPage: React.FC = () => {
 
   // Load tutors on component mount
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
+    const loadTutors = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error("Request timeout - please try again"));
+          }, 10000); // 10 second timeout
+        });
+
+        const dataPromise = tutorModuleAssignmentService.getAllApprovedTutors();
+
+        const tutorsData = (await Promise.race([
+          dataPromise,
+          timeoutPromise,
+        ])) as TutorWithModuleDetails[];
+
+        clearTimeout(timeoutId);
+
+        if (isMounted) {
+          setTutors(tutorsData);
+        }
+      } catch (err) {
+        console.error("Error loading tutors:", err);
+        if (isMounted) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load tutors. Please try again."
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     loadTutors();
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, []);
-
-  const loadTutors = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const tutorsData =
-        await tutorModuleAssignmentService.getAllApprovedTutors();
-      setTutors(tutorsData);
-    } catch (err) {
-      console.error("Error loading tutors:", err);
-      setError("Failed to load tutors. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleOpenAssignmentDialog = async (tutor: TutorWithModuleDetails) => {
     try {
       setSelectedTutor(tutor);
       setSelectedModuleId("");
 
-      const modules =
-        await tutorModuleAssignmentService.getAvailableModulesForTutor(
-          tutor.id
-        );
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Request timeout - please try again"));
+        }, 10000); // 10 second timeout
+      });
+
+      const dataPromise =
+        tutorModuleAssignmentService.getAvailableModulesForTutor(tutor.id);
+
+      const modules = (await Promise.race([
+        dataPromise,
+        timeoutPromise,
+      ])) as any[];
+
       setAvailableModules(modules);
       setAssignmentDialogOpen(true);
     } catch (err) {
       console.error("Error loading available modules:", err);
-      setError("Failed to load available modules. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load available modules. Please try again."
+      );
     }
   };
 
@@ -102,11 +151,21 @@ const TutorModuleAssignmentPage: React.FC = () => {
 
     try {
       setAssignmentLoading(true);
-      await tutorModuleAssignmentService.assignTutorToModule(
+
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Request timeout - please try again"));
+        }, 10000); // 10 second timeout
+      });
+
+      const assignPromise = tutorModuleAssignmentService.assignTutorToModule(
         selectedTutor.id,
         selectedModuleId,
         user.id
       );
+
+      await Promise.race([assignPromise, timeoutPromise]);
 
       // Reload tutors to update the list
       await loadTutors();
@@ -116,7 +175,11 @@ const TutorModuleAssignmentPage: React.FC = () => {
       setSelectedModuleId("");
     } catch (err) {
       console.error("Error assigning module:", err);
-      setError("Failed to assign module. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to assign module. Please try again."
+      );
     } finally {
       setAssignmentLoading(false);
     }
@@ -132,16 +195,29 @@ const TutorModuleAssignmentPage: React.FC = () => {
     }
 
     try {
-      await tutorModuleAssignmentService.removeTutorFromModule(
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Request timeout - please try again"));
+        }, 10000); // 10 second timeout
+      });
+
+      const removePromise = tutorModuleAssignmentService.removeTutorFromModule(
         tutorId,
         moduleId
       );
+
+      await Promise.race([removePromise, timeoutPromise]);
 
       // Reload tutors to update the list
       await loadTutors();
     } catch (err) {
       console.error("Error removing module:", err);
-      setError("Failed to remove module assignment. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to remove module assignment. Please try again."
+      );
     }
   };
 

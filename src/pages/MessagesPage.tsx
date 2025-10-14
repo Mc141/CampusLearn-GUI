@@ -32,10 +32,11 @@ import { messagingService, Conversation } from "../services/messagingService";
 import { tutorTopicAssignmentService } from "../services/tutorTopicAssignmentService";
 import { topicsService } from "../services/topicsService";
 import { RealtimeChat } from "../components/RealtimeChat";
+import { isSupabaseReady } from "../lib/supabase";
 import type { ChatMessage } from "../hooks/useRealtimeChat";
 
 const MessagesPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
@@ -55,24 +56,62 @@ const MessagesPage: React.FC = () => {
   // Load conversations on component mount
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
 
-    if (user) {
+    // Wait for authentication to complete AND session to be ready
+    if (user && !isLoading) {
       const loadConversations = async () => {
         try {
           setLoading(true);
           setError(null);
 
-          const conversationsData = await messagingService.getUserConversations(
-            user.id
-          );
+          // CRITICAL: Wait for Supabase session to be fully ready
+          const isReady = await isSupabaseReady();
+          if (!isReady) {
+            console.log("Supabase session not ready, waiting...");
+            // Wait a bit and try again
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            const isReadyRetry = await isSupabaseReady();
+            if (!isReadyRetry) {
+              throw new Error(
+                "Database connection not ready - please refresh the page"
+              );
+            }
+          }
+
+          console.log("Supabase session ready, loading conversations...");
+
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => {
+              reject(new Error("Request timeout - please try again"));
+            }, 30000); // 30 second timeout for conversations
+          });
+
+          const dataPromise = messagingService.getUserConversations(user.id);
+
+          const conversationsData = (await Promise.race([
+            dataPromise,
+            timeoutPromise,
+          ])) as Conversation[];
+
+          clearTimeout(timeoutId);
 
           if (isMounted) {
             setConversations(conversationsData);
+            console.log(
+              "Conversations loaded successfully:",
+              conversationsData.length
+            );
           }
         } catch (err) {
           console.error("Error loading conversations:", err);
           if (isMounted) {
-            setError("Failed to load conversations. Please try again.");
+            setError(
+              err instanceof Error
+                ? err.message
+                : "Failed to load conversations. Please try again."
+            );
           }
         } finally {
           if (isMounted) {
@@ -82,12 +121,18 @@ const MessagesPage: React.FC = () => {
       };
 
       loadConversations();
+    } else if (!isLoading && !user) {
+      // User is not authenticated
+      setLoading(false);
     }
 
     return () => {
       isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
-  }, [user]);
+  }, [user, isLoading]);
 
   // Load messages when conversation is selected
   useEffect(() => {
@@ -100,10 +145,38 @@ const MessagesPage: React.FC = () => {
     if (!selectedConversation || !user) return;
 
     try {
-      const messagesData = await messagingService.getMessagesBetweenUsers(
+      // CRITICAL: Wait for Supabase session to be fully ready
+      const isReady = await isSupabaseReady();
+      if (!isReady) {
+        console.log("Supabase session not ready for messages, waiting...");
+        // Wait a bit and try again
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const isReadyRetry = await isSupabaseReady();
+        if (!isReadyRetry) {
+          throw new Error(
+            "Database connection not ready - please refresh the page"
+          );
+        }
+      }
+
+      console.log("Supabase session ready, loading messages...");
+
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Request timeout - please try again"));
+        }, 30000); // 30 second timeout for messages
+      });
+
+      const dataPromise = messagingService.getMessagesBetweenUsers(
         user.id,
         selectedConversation.userId
       );
+
+      const messagesData = (await Promise.race([
+        dataPromise,
+        timeoutPromise,
+      ])) as any[];
 
       // Convert messages to ChatMessage format
       const chatMessages: ChatMessage[] = messagesData.map((msg) => {
@@ -116,6 +189,7 @@ const MessagesPage: React.FC = () => {
       });
 
       setInitialMessages(chatMessages);
+      console.log("Messages loaded successfully:", chatMessages.length);
 
       // Mark messages as read
       await messagingService.markMessagesAsRead(
@@ -127,53 +201,122 @@ const MessagesPage: React.FC = () => {
       // Note: This will be handled by the parent useEffect
     } catch (err) {
       console.error("Error loading messages:", err);
-      setError("Failed to load messages. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load messages. Please try again."
+      );
     }
   };
 
   const handleMessageUpdate = async (messages: ChatMessage[]) => {
     if (!selectedConversation || !user) return;
 
-    try {
-      // Store messages in database
-      await messagingService.storeMessages(
-        messages,
-        user.id,
-        selectedConversation.userId
-      );
+    // Retry logic for critical message storage
+    let retries = 3;
+    let lastError: any;
 
-      // Reload conversations to update last message
-      const conversationsData = await messagingService.getUserConversations(
-        user.id
-      );
-      setConversations(conversationsData);
-    } catch (err) {
-      console.error("Error storing messages:", err);
+    while (retries > 0) {
+      try {
+        // No timeout for message storage - it's critical
+        await messagingService.storeMessages(
+          messages,
+          user.id,
+          selectedConversation.userId
+        );
+
+        // If we get here, messages were stored successfully
+        console.log("Messages stored successfully");
+
+        // Try to reload conversations, but don't fail if this doesn't work
+        try {
+          const conversationsData = await messagingService.getUserConversations(
+            user.id
+          );
+          setConversations(conversationsData);
+        } catch (conversationErr) {
+          console.warn(
+            "Failed to reload conversations, but messages were stored:",
+            conversationErr
+          );
+          // Don't throw - messages were stored successfully
+        }
+
+        return; // Success - exit the retry loop
+      } catch (err) {
+        lastError = err;
+        retries--;
+
+        if (retries > 0) {
+          console.warn(
+            `Message storage failed, retrying in 2 seconds... (${retries} retries left)`,
+            err
+          );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      }
     }
+
+    // If we get here, all retries failed
+    console.error("Failed to store messages after all retries:", lastError);
+    setError(
+      "Failed to save messages after multiple attempts. Please try sending again."
+    );
   };
 
   const handleStartNewConversation = async () => {
-    if (!user) return;
+    if (!user || isLoading) return;
+
+    // Wait for authentication to be fully established
+    if (!user.id) {
+      setError("Please wait for authentication to complete");
+      return;
+    }
+
+    // Simple check - just proceed and let the actual database calls handle errors
+    console.log("Starting new conversation process...");
 
     try {
       setLoading(true);
+      setError(null);
 
-      // Load available topics for the user
-      const topics = await topicsService.getAllTopics();
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Request timeout - please try again"));
+        }, 30000); // 30 second timeout for topics
+      });
+
+      const dataPromise = topicsService.getAllTopics();
+
+      const topics = (await Promise.race([
+        dataPromise,
+        timeoutPromise,
+      ])) as any[];
+
       setAvailableTopics(topics);
 
       // Load available tutors for selected topic
       if (selectedTopic) {
-        const tutors = await tutorTopicAssignmentService.getTutorsForTopic(
-          selectedTopic
-        );
-        setAvailableTutors(tutors);
+        try {
+          const tutors = await tutorTopicAssignmentService.getTutorsForTopic(
+            selectedTopic
+          );
+          setAvailableTutors(tutors);
+        } catch (tutorErr) {
+          console.error("Error loading tutors:", tutorErr);
+          // Don't fail the entire dialog for tutor loading errors
+        }
       }
 
       setNewConversationDialogOpen(true);
     } catch (err) {
       console.error("Error loading data for new conversation:", err);
-      setError("Failed to load data. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load data. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -184,12 +327,29 @@ const MessagesPage: React.FC = () => {
     setSelectedTutor("");
 
     try {
-      const tutors = await tutorTopicAssignmentService.getTutorsForTopic(
-        topicId
-      );
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Request timeout - please try again"));
+        }, 30000); // 30 second timeout for tutors
+      });
+
+      const dataPromise =
+        tutorTopicAssignmentService.getTutorsForTopic(topicId);
+
+      const tutors = (await Promise.race([
+        dataPromise,
+        timeoutPromise,
+      ])) as any[];
+
       setAvailableTutors(tutors);
     } catch (err) {
       console.error("Error loading tutors for topic:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load tutors. Please try again."
+      );
     }
   };
 
@@ -197,11 +357,20 @@ const MessagesPage: React.FC = () => {
     if (!user || !selectedTutor || !initialMessage.trim()) return;
 
     try {
-      await messagingService.sendMessage({
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Request timeout - please try again"));
+        }, 10000); // 10 second timeout
+      });
+
+      const sendPromise = messagingService.sendMessage({
         senderId: user.id,
         receiverId: selectedTutor,
         content: initialMessage.trim(),
       });
+
+      await Promise.race([sendPromise, timeoutPromise]);
 
       setNewConversationDialogOpen(false);
       setSelectedTutor("");
@@ -210,13 +379,22 @@ const MessagesPage: React.FC = () => {
       setAvailableTutors([]);
 
       // Reload conversations to show the new conversation
-      const conversationsData = await messagingService.getUserConversations(
+      const conversationsPromise = messagingService.getUserConversations(
         user.id
       );
+      const conversationsData = (await Promise.race([
+        conversationsPromise,
+        timeoutPromise,
+      ])) as Conversation[];
+
       setConversations(conversationsData);
     } catch (err) {
       console.error("Error creating conversation:", err);
-      setError("Failed to create conversation. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to create conversation. Please try again."
+      );
     }
   };
 
@@ -256,6 +434,7 @@ const MessagesPage: React.FC = () => {
           variant="contained"
           startIcon={<Add />}
           onClick={handleStartNewConversation}
+          disabled={isLoading || !user}
         >
           New Conversation
         </Button>

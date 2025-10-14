@@ -96,16 +96,31 @@ const TopicsPage: React.FC = () => {
   // Load data from database
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
 
     const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const [topicsData, modulesData] = await Promise.all([
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error("Request timeout - please try again"));
+          }, 30000); // 30 second timeout for topics
+        });
+
+        const dataPromise = Promise.all([
           topicsService.getAllTopics(),
           modulesService.getAllModules(),
         ]);
+
+        const [topicsData, modulesData] = (await Promise.race([
+          dataPromise,
+          timeoutPromise,
+        ])) as [any, any];
+
+        clearTimeout(timeoutId);
 
         if (!isMounted) return;
 
@@ -114,18 +129,28 @@ const TopicsPage: React.FC = () => {
 
         // Load user subscriptions
         if (user) {
-          const subscribedTopics = await topicsService.getUserSubscribedTopics(
-            user.id
-          );
-          const subscriptionIds = new Set(
-            subscribedTopics.map((topic) => topic.id)
-          );
-          setSubscriptions(subscriptionIds);
+          try {
+            const subscribedTopics =
+              await topicsService.getUserSubscribedTopics(user.id);
+            if (isMounted) {
+              const subscriptionIds = new Set(
+                subscribedTopics.map((topic) => topic.id)
+              );
+              setSubscriptions(subscriptionIds);
+            }
+          } catch (subErr) {
+            console.error("Error loading subscriptions:", subErr);
+            // Don't fail the entire page for subscription errors
+          }
         }
       } catch (err) {
         console.error("Error loading data:", err);
         if (isMounted) {
-          setError("Failed to load topics. Please try again.");
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load topics. Please try again."
+          );
         }
       } finally {
         if (isMounted) {
@@ -138,6 +163,9 @@ const TopicsPage: React.FC = () => {
 
     return () => {
       isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [user]);
 

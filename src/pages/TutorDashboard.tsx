@@ -50,6 +50,9 @@ const TutorDashboard: React.FC = () => {
 
   // Load tutor data
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
     const loadTutorData = async () => {
       if (!user) return;
 
@@ -57,42 +60,75 @@ const TutorDashboard: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // Load assigned topics
-        const topics = await tutorTopicAssignmentService.getTopicsForTutor(
-          user.id
-        );
-        setAssignedTopics(topics);
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error("Request timeout - please try again"));
+          }, 15000); // 15 second timeout for multiple requests
+        });
 
-        // Load questions for assigned topics
-        const allQuestions: any[] = [];
-        for (const topic of topics) {
-          try {
-            const questions = await questionsService.getQuestionsByTopic(
-              topic.id
-            );
-            allQuestions.push(...questions);
-          } catch (err) {
-            console.error(
-              `Error loading questions for topic ${topic.id}:`,
-              err
-            );
+        const dataPromise = (async () => {
+          // Load assigned topics
+          const topics = await tutorTopicAssignmentService.getTopicsForTutor(
+            user.id
+          );
+
+          if (!isMounted) return null;
+
+          setAssignedTopics(topics);
+
+          // Load questions for assigned topics
+          const allQuestions: any[] = [];
+          for (const topic of topics) {
+            try {
+              const questions = await questionsService.getQuestionsByTopic(
+                topic.id
+              );
+              allQuestions.push(...questions);
+            } catch (err) {
+              console.error(
+                `Error loading questions for topic ${topic.id}:`,
+                err
+              );
+            }
           }
-        }
 
-        // Filter questions by status
-        setPendingQuestions(allQuestions.filter((q) => q.status === "open"));
-        setAnsweredQuestions(
-          allQuestions.filter((q) => q.status === "answered")
-        );
+          if (!isMounted) return null;
+
+          // Filter questions by status
+          setPendingQuestions(allQuestions.filter((q) => q.status === "open"));
+          setAnsweredQuestions(
+            allQuestions.filter((q) => q.status === "answered")
+          );
+          return topics;
+        })();
+
+        await Promise.race([dataPromise, timeoutPromise]);
+        clearTimeout(timeoutId);
       } catch (err) {
         console.error("Error loading tutor data:", err);
-        setError("Failed to load tutor data. Please try again.");
+        if (isMounted) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load tutor data. Please try again."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadTutorData();
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [user]);
 
   const stats = [

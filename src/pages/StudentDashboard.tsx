@@ -205,15 +205,16 @@ const StudentDashboard: React.FC = () => {
                         primary={question.title}
                         secondary={
                           <Box>
-                            <div
-                              style={{
+                            <Typography
+                              variant="body2"
+                              sx={{
                                 fontSize: "0.875rem",
                                 color: "inherit",
                                 opacity: 0.7,
                               }}
                             >
                               {question.content.substring(0, 100)}...
-                            </div>
+                            </Typography>
                             <Box
                               sx={{
                                 mt: 1,

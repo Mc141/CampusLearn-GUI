@@ -1,5 +1,6 @@
 import { createClient } from '../lib/supabase-client';
 import type { Attachment } from '../types';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface FileUploadProgress {
   fileId: string;
@@ -43,7 +44,7 @@ export class FileUploadService {
       }
 
       // Start upload progress
-      const fileId = `${Date.now()}-${Math.random().toString(36).substring(2)}`;
+      const fileId = uuidv4(); // Generate proper UUID
       onProgress?.({
         fileId,
         fileName: file.name,
@@ -95,7 +96,7 @@ export class FileUploadService {
 
     } catch (error) {
       console.error('Upload error:', error);
-      const fileId = `${Date.now()}-${Math.random().toString(36).substring(2)}`;
+      const fileId = uuidv4(); // Generate proper UUID for error case too
       onProgress?.({
         fileId,
         fileName: file.name,

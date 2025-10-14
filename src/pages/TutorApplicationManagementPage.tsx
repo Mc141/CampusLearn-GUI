@@ -60,23 +60,57 @@ const TutorApplicationManagementPage: React.FC = () => {
 
   // Load applications
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
     const loadApplications = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const applicationsData =
-          await tutorApplicationService.getAllApplications();
-        setApplications(applicationsData);
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error("Request timeout - please try again"));
+          }, 10000); // 10 second timeout
+        });
+
+        const dataPromise = tutorApplicationService.getAllApplications();
+
+        const applicationsData = (await Promise.race([
+          dataPromise,
+          timeoutPromise,
+        ])) as TutorApplicationWithDetails[];
+
+        clearTimeout(timeoutId);
+
+        if (isMounted) {
+          setApplications(applicationsData);
+        }
       } catch (err) {
         console.error("Error loading applications:", err);
-        setError("Failed to load applications. Please try again.");
+        if (isMounted) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load applications. Please try again."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadApplications();
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, []);
 
   const handleReviewApplication = async (status: "approved" | "rejected") => {

@@ -51,8 +51,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setSupabaseUser(session?.user ?? null);
 
       if (session?.user) {
-        // Fetch user profile from database
-        fetchUserProfile(session.user.id);
+        // CRITICAL FIX: Defer async call to avoid deadlock
+        setTimeout(() => {
+          fetchUserProfile(session.user.id).catch((err) =>
+            console.error("Initial profile fetch failed", err)
+          );
+        }, 0);
       } else {
         // No session, set loading to false
         setIsLoading(false);
@@ -62,14 +66,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state change:", event, session?.user?.email);
       setSession(session);
       setSupabaseUser(session?.user ?? null);
 
       if (session?.user) {
-        console.log("Fetching profile for user:", session.user.id);
-        await fetchUserProfile(session.user.id);
+        console.log("Scheduling profile fetch for user:", session.user.id);
+        // CRITICAL FIX: Defer async call to avoid deadlock
+        setTimeout(() => {
+          fetchUserProfile(session.user.id).catch((err) =>
+            console.error("Profile fetch failed", err)
+          );
+        }, 0);
       } else {
         console.log("No user session, clearing user");
         setUser(null);
