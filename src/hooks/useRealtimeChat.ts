@@ -13,6 +13,14 @@ export interface ChatMessage {
     name: string
   }
   createdAt: string
+  attachments?: Array<{
+    id: string
+    name: string
+    type: 'pdf' | 'video' | 'audio' | 'image' | 'link'
+    url: string
+    size?: number
+    uploadedAt: Date
+  }>
 }
 
 const EVENT_MESSAGE_TYPE = 'message'
@@ -44,7 +52,7 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
   }, [roomName, username, supabase])
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, attachments?: ChatMessage['attachments']) => {
       if (!channel || !isConnected) return
 
       const message: ChatMessage = {
@@ -54,6 +62,7 @@ export function useRealtimeChat({ roomName, username }: UseRealtimeChatProps) {
           name: username,
         },
         createdAt: new Date().toISOString(),
+        attachments: attachments || undefined,
       }
 
       // Update local state immediately for the sender

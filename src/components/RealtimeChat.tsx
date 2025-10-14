@@ -2,8 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, TextField, IconButton, Paper, Typography } from "@mui/material";
 import { Send } from "@mui/icons-material";
 import { ChatMessageItem } from "./ChatMessageItem";
+import { ChatFileUpload } from "./ChatFileUpload";
 import { useChatScroll } from "../hooks/useChatScroll";
 import { type ChatMessage, useRealtimeChat } from "../hooks/useRealtimeChat";
+import type { UploadedFile } from "../services/fileUploadService";
+import { fileUploadService } from "../services/fileUploadService";
 
 interface RealtimeChatProps {
   roomName: string;
@@ -37,6 +40,7 @@ export const RealtimeChat: React.FC<RealtimeChatProps> = ({
     username,
   });
   const [newMessage, setNewMessage] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<UploadedFile[]>([]);
 
   // Merge realtime messages with initial messages
   const allMessages = useMemo(() => {
@@ -68,13 +72,32 @@ export const RealtimeChat: React.FC<RealtimeChatProps> = ({
   const handleSendMessage = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!newMessage.trim() || !isConnected) return;
+      if ((!newMessage.trim() && pendingFiles.length === 0) || !isConnected)
+        return;
 
-      sendMessage(newMessage);
+      // Convert UploadedFile to ChatMessage attachment format
+      const attachments =
+        pendingFiles.length > 0
+          ? pendingFiles.map((file) => ({
+              id: file.id,
+              name: file.name,
+              type: file.type,
+              url: file.url,
+              size: file.size,
+              uploadedAt: file.uploadedAt,
+            }))
+          : undefined;
+
+      sendMessage(newMessage.trim() || "📎 Shared files", attachments);
       setNewMessage("");
+      setPendingFiles([]);
     },
-    [newMessage, isConnected, sendMessage]
+    [newMessage, pendingFiles, isConnected, sendMessage]
   );
+
+  const handleFilesUploaded = useCallback((files: UploadedFile[]) => {
+    setPendingFiles((prev) => [...prev, ...files]);
+  }, []);
 
   return (
     <Box
@@ -146,8 +169,16 @@ export const RealtimeChat: React.FC<RealtimeChatProps> = ({
           borderColor: "divider",
           p: 2,
           borderRadius: 0,
+          alignItems: "flex-end",
         }}
       >
+        <ChatFileUpload
+          onFilesUploaded={handleFilesUploaded}
+          maxFiles={5}
+          maxSize={50}
+          disabled={!isConnected}
+        />
+
         <TextField
           sx={{
             flex: 1,
@@ -158,12 +189,19 @@ export const RealtimeChat: React.FC<RealtimeChatProps> = ({
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type a message..."
+          placeholder={
+            pendingFiles.length > 0
+              ? "Add a message (optional)..."
+              : "Type a message..."
+          }
           disabled={!isConnected}
           variant="outlined"
           size="small"
+          multiline
+          maxRows={3}
         />
-        {isConnected && newMessage.trim() && (
+
+        {isConnected && (newMessage.trim() || pendingFiles.length > 0) && (
           <IconButton
             type="submit"
             disabled={!isConnected}
@@ -180,6 +218,55 @@ export const RealtimeChat: React.FC<RealtimeChatProps> = ({
           </IconButton>
         )}
       </Paper>
+
+      {/* Pending Files Preview */}
+      {pendingFiles.length > 0 && (
+        <Paper
+          sx={{
+            p: 2,
+            borderTop: 1,
+            borderColor: "divider",
+            backgroundColor: "grey.50",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Files ready to send ({pendingFiles.length}):
+          </Typography>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+            {pendingFiles.map((file, index) => (
+              <Box
+                key={file.id}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  p: 1,
+                  backgroundColor: "background.paper",
+                  borderRadius: 1,
+                  border: 1,
+                  borderColor: "primary.main",
+                  maxWidth: 200,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    flex: 1,
+                  }}
+                >
+                  {file.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {fileUploadService.formatFileSize(file.size)}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Paper>
+      )}
     </Box>
   );
 };

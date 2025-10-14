@@ -126,7 +126,8 @@ export const messagingService = {
               name,
               type,
               url,
-              size
+              size,
+              uploaded_at
             )
           )
         `)
@@ -138,7 +139,7 @@ export const messagingService = {
         throw error;
       }
 
-      return data.map(msg => ({
+      const messages = data.map(msg => ({
         id: msg.id,
         senderId: msg.sender_id,
         receiverId: msg.receiver_id,
@@ -151,8 +152,12 @@ export const messagingService = {
           type: att.attachment.type,
           url: att.attachment.url,
           size: att.attachment.size,
+          uploadedAt: new Date(att.attachment.uploaded_at),
         })) || [],
       }));
+
+      console.log('Loaded messages with attachments:', messages);
+      return messages;
     } catch (error) {
       console.error('Error in getMessagesBetweenUsers:', error);
       throw error;
@@ -292,6 +297,14 @@ export const messagingService = {
         name: senderName,
       },
       createdAt: message.createdAt.toISOString(),
+      attachments: message.attachments?.map(att => ({
+        id: att.id,
+        name: att.name,
+        type: att.type,
+        url: att.url,
+        size: att.size,
+        uploadedAt: att.uploadedAt,
+      })),
     };
   },
 
@@ -319,6 +332,63 @@ export const messagingService = {
       if (error) {
         console.error('Error storing messages:', error);
         throw error;
+      }
+
+      // Handle attachments if they exist
+      for (const message of messages) {
+        if (message.attachments && message.attachments.length > 0) {
+          console.log('Storing attachments for message:', message.id, message.attachments);
+          
+          // Store attachments
+          const attachmentsToStore = message.attachments.map(att => ({
+            id: att.id,
+            name: att.name,
+            type: att.type,
+            url: att.url,
+            size: att.size,
+            uploaded_by: senderId,
+            uploaded_at: att.uploadedAt.toISOString(),
+          }));
+
+          console.log('Attachments to store:', attachmentsToStore);
+
+          // Insert attachments (ignore duplicates)
+          const { error: attachmentError } = await supabase
+            .from('attachments')
+            .upsert(attachmentsToStore, { 
+              onConflict: 'id',
+              ignoreDuplicates: true 
+            });
+
+          if (attachmentError) {
+            console.error('Error storing attachments:', attachmentError);
+            // Don't throw here, just log the error
+          } else {
+            console.log('Attachments stored successfully');
+          }
+
+          // Link attachments to message
+          const messageAttachments = message.attachments.map(att => ({
+            message_id: message.id,
+            attachment_id: att.id,
+          }));
+
+          console.log('Message attachments to link:', messageAttachments);
+
+          const { error: linkError } = await supabase
+            .from('message_attachments')
+            .upsert(messageAttachments, { 
+              onConflict: 'message_id,attachment_id',
+              ignoreDuplicates: true 
+            });
+
+          if (linkError) {
+            console.error('Error linking attachments to message:', linkError);
+            // Don't throw here, just log the error
+          } else {
+            console.log('Message attachments linked successfully');
+          }
+        }
       }
     } catch (error) {
       console.error('Error in storeMessages:', error);
