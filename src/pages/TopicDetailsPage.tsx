@@ -61,6 +61,9 @@ import {
 } from "../services/tutorTopicAssignmentService";
 import TutorAssignmentDialog from "../components/TutorAssignmentDialog";
 import { messagingService } from "../services/messagingService";
+import TopicAnswerFileUpload from "../components/TopicAnswerFileUpload";
+import TopicAnswerAttachments from "../components/TopicAnswerAttachments";
+import { topicAnswerAttachmentService } from "../services/topicAnswerAttachmentService";
 
 const TopicDetailsPage: React.FC = () => {
   const { user } = useAuth();
@@ -90,6 +93,10 @@ const TopicDetailsPage: React.FC = () => {
   const [newAnswer, setNewAnswer] = useState<CreateAnswerData>({
     content: "",
   });
+  const [answerAttachments, setAnswerAttachments] = useState<File[]>([]);
+  const [answerFileUploadStatus, setAnswerFileUploadStatus] = useState<{
+    [key: string]: "pending" | "uploading" | "completed" | "error";
+  }>({});
 
   // Tutor assignment dialog state
   const [tutorAssignmentDialogOpen, setTutorAssignmentDialogOpen] =
@@ -200,7 +207,45 @@ const TopicDetailsPage: React.FC = () => {
 
     try {
       setLoading(true);
-      await answersService.createAnswer(selectedQuestionId, user.id, newAnswer);
+      const newAnswerResult = await answersService.createAnswer(
+        selectedQuestionId,
+        user.id,
+        newAnswer
+      );
+
+      // Handle attachments if any were uploaded
+      if (answerAttachments.length > 0 && newAnswerResult.id) {
+        // Update file status to uploading
+        const newStatus = { ...answerFileUploadStatus };
+        answerAttachments.forEach((file) => {
+          newStatus[file.name] = "uploading";
+        });
+        setAnswerFileUploadStatus(newStatus);
+
+        // Upload files to the created answer
+        await topicAnswerAttachmentService.uploadFilesToAnswer(
+          newAnswerResult.id,
+          answerAttachments,
+          user.id,
+          (progress) => {
+            console.log(
+              `Upload progress for ${progress.fileName}: ${progress.progress}%`
+            );
+            // Update status based on progress
+            if (progress.status === "completed") {
+              setAnswerFileUploadStatus((prev) => ({
+                ...prev,
+                [progress.fileName]: "completed",
+              }));
+            } else if (progress.status === "error") {
+              setAnswerFileUploadStatus((prev) => ({
+                ...prev,
+                [progress.fileName]: "error",
+              }));
+            }
+          }
+        );
+      }
 
       // Refresh questions list to show new answer
       const updatedQuestions = await questionsService.getQuestionsByTopic(
@@ -211,6 +256,8 @@ const TopicDetailsPage: React.FC = () => {
       setAnswerDialogOpen(false);
       setSelectedQuestionId(null);
       setNewAnswer({ content: "" });
+      setAnswerAttachments([]);
+      setAnswerFileUploadStatus({});
     } catch (err) {
       console.error("Error creating answer:", err);
       setError("Failed to create answer. Please try again.");
@@ -613,6 +660,10 @@ const TopicDetailsPage: React.FC = () => {
                                     <Typography variant="body2" sx={{ mb: 1 }}>
                                       {answer.content}
                                     </Typography>
+                                    {/* Answer Attachments */}
+                                    <TopicAnswerAttachments
+                                      answerId={answer.id}
+                                    />
                                     <Box
                                       sx={{
                                         display: "flex",
@@ -762,6 +813,113 @@ const TopicDetailsPage: React.FC = () => {
             margin="normal"
             required
           />
+
+          {/* File Upload */}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Attach Files (Optional)
+            </Typography>
+            <TopicAnswerFileUpload
+              userId={user?.id || ""}
+              onFilesUploaded={(files) => {
+                setAnswerAttachments((prev) => {
+                  const newFiles = [...prev, ...files];
+                  // Update file status for new files
+                  const newStatus = { ...answerFileUploadStatus };
+                  files.forEach((file) => {
+                    newStatus[file.name] = "pending";
+                  });
+                  setAnswerFileUploadStatus(newStatus);
+                  return newFiles;
+                });
+              }}
+              disabled={loading}
+            />
+          </Box>
+
+          {/* Attached Files List */}
+          {answerAttachments.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Attached Files ({answerAttachments.length})
+              </Typography>
+              <Box sx={{ maxHeight: 200, overflowY: "auto" }}>
+                {answerAttachments.map((file, index) => (
+                  <Box
+                    key={`${file.name}-${index}`}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      p: 1,
+                      mb: 1,
+                      border: "1px solid",
+                      borderColor: "grey.300",
+                      borderRadius: 1,
+                      backgroundColor: "grey.50",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {file.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ({Math.round(file.size / 1024)} KB)
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {answerFileUploadStatus[file.name] === "pending" && (
+                        <Chip
+                          label="Ready"
+                          size="small"
+                          color="default"
+                          variant="outlined"
+                        />
+                      )}
+                      {answerFileUploadStatus[file.name] === "uploading" && (
+                        <Chip
+                          label="Uploading..."
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      )}
+                      {answerFileUploadStatus[file.name] === "completed" && (
+                        <Chip
+                          label="Uploaded"
+                          size="small"
+                          color="success"
+                          variant="filled"
+                        />
+                      )}
+                      {answerFileUploadStatus[file.name] === "error" && (
+                        <Chip
+                          label="Error"
+                          size="small"
+                          color="error"
+                          variant="filled"
+                        />
+                      )}
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setAnswerAttachments((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                          const newStatus = { ...answerFileUploadStatus };
+                          delete newStatus[file.name];
+                          setAnswerFileUploadStatus(newStatus);
+                        }}
+                        color="error"
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAnswerDialogOpen(false)}>Cancel</Button>
