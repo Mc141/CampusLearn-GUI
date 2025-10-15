@@ -36,6 +36,7 @@ import {
   Tag,
   Share,
   Bookmark,
+  Delete,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
@@ -45,6 +46,9 @@ import {
   ForumReplyWithAuthor,
 } from "../services/forumService";
 import { formatDistanceToNow } from "date-fns";
+import ForumAttachments from "../components/ForumAttachments";
+import ForumFileUpload from "../components/ForumFileUpload";
+import { forumAttachmentService } from "../services/forumAttachmentService";
 
 const PostDetailsPage: React.FC = () => {
   const { user } = useAuth();
@@ -59,6 +63,10 @@ const PostDetailsPage: React.FC = () => {
   const [isAnonymousReply, setIsAnonymousReply] = useState(false);
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
+  const [replyFileUploadStatus, setReplyFileUploadStatus] = useState<{
+    [key: string]: "pending" | "uploading" | "completed" | "error";
+  }>({});
 
   // Load post details
   const loadPost = async () => {
@@ -113,9 +121,45 @@ const PostDetailsPage: React.FC = () => {
         });
       }
 
+      // Handle attachments if any were uploaded
+      if (replyAttachments.length > 0 && newReply.id) {
+        // Update file status to uploading
+        const newStatus = { ...replyFileUploadStatus };
+        replyAttachments.forEach((file) => {
+          newStatus[file.name] = "uploading";
+        });
+        setReplyFileUploadStatus(newStatus);
+
+        // Upload files to the created reply
+        await forumAttachmentService.uploadFilesToReply(
+          newReply.id,
+          replyAttachments,
+          user?.id || "",
+          (progress) => {
+            console.log(
+              `Upload progress for ${progress.fileName}: ${progress.progress}%`
+            );
+            // Update status based on progress
+            if (progress.status === "completed") {
+              setReplyFileUploadStatus((prev) => ({
+                ...prev,
+                [progress.fileName]: "completed",
+              }));
+            } else if (progress.status === "error") {
+              setReplyFileUploadStatus((prev) => ({
+                ...prev,
+                [progress.fileName]: "error",
+              }));
+            }
+          }
+        );
+      }
+
       // Reset form
       setReplyContent("");
       setIsAnonymousReply(false);
+      setReplyAttachments([]);
+      setReplyFileUploadStatus({});
       setReplyDialogOpen(false);
     } catch (err) {
       console.error("Error submitting reply:", err);
@@ -293,6 +337,9 @@ const PostDetailsPage: React.FC = () => {
             {post.content}
           </Typography>
 
+          {/* Post Attachments */}
+          <ForumAttachments postId={post.id} />
+
           {/* Post Actions */}
           <Box sx={{ display: "flex", gap: 1 }}>
             <Button
@@ -402,6 +449,9 @@ const PostDetailsPage: React.FC = () => {
                           addSuffix: true,
                         })}
                       </Typography>
+
+                      {/* Reply Attachments */}
+                      <ForumAttachments replyId={reply.id} />
                     </Box>
                   }
                 />
@@ -432,6 +482,113 @@ const PostDetailsPage: React.FC = () => {
             placeholder="Write your reply..."
             sx={{ mt: 1 }}
           />
+
+          {/* File Upload */}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Attach Files (Optional)
+            </Typography>
+            <ForumFileUpload
+              userId={user?.id || ""}
+              onFilesUploaded={(files) => {
+                setReplyAttachments((prev) => {
+                  const newFiles = [...prev, ...files];
+                  // Update file status for new files
+                  const newStatus = { ...replyFileUploadStatus };
+                  files.forEach((file) => {
+                    newStatus[file.name] = "pending";
+                  });
+                  setReplyFileUploadStatus(newStatus);
+                  return newFiles;
+                });
+              }}
+              disabled={isSubmittingReply}
+            />
+          </Box>
+
+          {/* Attached Files List */}
+          {replyAttachments.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Attached Files ({replyAttachments.length})
+              </Typography>
+              <Box sx={{ maxHeight: 200, overflowY: "auto" }}>
+                {replyAttachments.map((file, index) => (
+                  <Box
+                    key={`${file.name}-${index}`}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      p: 1,
+                      mb: 1,
+                      border: "1px solid",
+                      borderColor: "grey.300",
+                      borderRadius: 1,
+                      backgroundColor: "grey.50",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {file.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ({Math.round(file.size / 1024)} KB)
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {replyFileUploadStatus[file.name] === "pending" && (
+                        <Chip
+                          label="Ready"
+                          size="small"
+                          color="default"
+                          variant="outlined"
+                        />
+                      )}
+                      {replyFileUploadStatus[file.name] === "uploading" && (
+                        <Chip
+                          label="Uploading..."
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      )}
+                      {replyFileUploadStatus[file.name] === "completed" && (
+                        <Chip
+                          label="Uploaded"
+                          size="small"
+                          color="success"
+                          variant="filled"
+                        />
+                      )}
+                      {replyFileUploadStatus[file.name] === "error" && (
+                        <Chip
+                          label="Error"
+                          size="small"
+                          color="error"
+                          variant="filled"
+                        />
+                      )}
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setReplyAttachments((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                          const newStatus = { ...replyFileUploadStatus };
+                          delete newStatus[file.name];
+                          setReplyFileUploadStatus(newStatus);
+                        }}
+                        color="error"
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
 
           <FormControlLabel
             control={

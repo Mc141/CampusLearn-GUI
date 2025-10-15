@@ -40,11 +40,17 @@ import {
   MoreVert,
   FilterList,
   Tag,
+  Delete,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { forumService, ForumPostWithAuthor } from "../services/forumService";
 import { formatDistanceToNow } from "date-fns";
+import ForumFileUpload from "../components/ForumFileUpload";
+import {
+  ForumAttachment,
+  forumAttachmentService,
+} from "../services/forumAttachmentService";
 
 const ForumPage: React.FC = () => {
   const { user } = useAuth();
@@ -71,6 +77,10 @@ const ForumPage: React.FC = () => {
   const [newPostTags, setNewPostTags] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [postAttachments, setPostAttachments] = useState<File[]>([]);
+  const [fileUploadStatus, setFileUploadStatus] = useState<{
+    [key: string]: "pending" | "uploading" | "completed" | "error";
+  }>({});
 
   // Load forum posts
   const loadPosts = async () => {
@@ -134,7 +144,7 @@ const ForumPage: React.FC = () => {
         .map((tag) => tag.trim())
         .filter((tag) => tag);
 
-      await forumService.createForumPost(
+      const newPost = await forumService.createForumPost(
         {
           title: newPostTitle,
           content: newPostContent,
@@ -144,11 +154,47 @@ const ForumPage: React.FC = () => {
         user?.id
       );
 
+      // Handle attachments if any were uploaded
+      if (postAttachments.length > 0 && newPost.id) {
+        // Update file status to uploading
+        const newStatus = { ...fileUploadStatus };
+        postAttachments.forEach((file) => {
+          newStatus[file.name] = "uploading";
+        });
+        setFileUploadStatus(newStatus);
+
+        // Upload files to the created post
+        await forumAttachmentService.uploadFilesToPost(
+          newPost.id,
+          postAttachments,
+          user?.id || "",
+          (progress) => {
+            console.log(
+              `Upload progress for ${progress.fileName}: ${progress.progress}%`
+            );
+            // Update status based on progress
+            if (progress.status === "completed") {
+              setFileUploadStatus((prev) => ({
+                ...prev,
+                [progress.fileName]: "completed",
+              }));
+            } else if (progress.status === "error") {
+              setFileUploadStatus((prev) => ({
+                ...prev,
+                [progress.fileName]: "error",
+              }));
+            }
+          }
+        );
+      }
+
       // Reset form
       setNewPostTitle("");
       setNewPostContent("");
       setNewPostTags("");
       setIsAnonymous(false);
+      setPostAttachments([]);
+      setFileUploadStatus({});
       setCreatePostDialogOpen(false);
 
       // Reload posts
@@ -569,6 +615,113 @@ const ForumPage: React.FC = () => {
             placeholder="e.g., programming, math, assignment"
             helperText="Add relevant tags to help others find your post"
           />
+
+          {/* File Upload */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              Attach Files (Optional)
+            </Typography>
+            <ForumFileUpload
+              userId={user?.id || ""}
+              onFilesUploaded={(files) => {
+                setPostAttachments((prev) => {
+                  const newFiles = [...prev, ...files];
+                  // Update file status for new files
+                  const newStatus = { ...fileUploadStatus };
+                  files.forEach((file) => {
+                    newStatus[file.name] = "pending";
+                  });
+                  setFileUploadStatus(newStatus);
+                  return newFiles;
+                });
+              }}
+              disabled={isCreating}
+            />
+          </Box>
+
+          {/* Attached Files List */}
+          {postAttachments.length > 0 && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Attached Files ({postAttachments.length})
+              </Typography>
+              <Box sx={{ maxHeight: 200, overflowY: "auto" }}>
+                {postAttachments.map((file, index) => (
+                  <Box
+                    key={`${file.name}-${index}`}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      p: 1,
+                      mb: 1,
+                      border: "1px solid",
+                      borderColor: "grey.300",
+                      borderRadius: 1,
+                      backgroundColor: "grey.50",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {file.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        ({Math.round(file.size / 1024)} KB)
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {fileUploadStatus[file.name] === "pending" && (
+                        <Chip
+                          label="Ready"
+                          size="small"
+                          color="default"
+                          variant="outlined"
+                        />
+                      )}
+                      {fileUploadStatus[file.name] === "uploading" && (
+                        <Chip
+                          label="Uploading..."
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      )}
+                      {fileUploadStatus[file.name] === "completed" && (
+                        <Chip
+                          label="Uploaded"
+                          size="small"
+                          color="success"
+                          variant="filled"
+                        />
+                      )}
+                      {fileUploadStatus[file.name] === "error" && (
+                        <Chip
+                          label="Error"
+                          size="small"
+                          color="error"
+                          variant="filled"
+                        />
+                      )}
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setPostAttachments((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                          const newStatus = { ...fileUploadStatus };
+                          delete newStatus[file.name];
+                          setFileUploadStatus(newStatus);
+                        }}
+                        color="error"
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
 
           <FormControlLabel
             control={
