@@ -48,6 +48,7 @@ import {
   QuestionWithDetails,
   CreateQuestionData,
 } from "../services/questionsService";
+import TopicResources from "../components/TopicResources";
 import {
   answersService,
   AnswerWithDetails,
@@ -455,6 +456,14 @@ const TopicDetailsPage: React.FC = () => {
           </Box>
         </CardContent>
       </Card>
+
+      {/* Learning Resources */}
+      <Box sx={{ mb: 4 }}>
+        <TopicResources
+          topicId={topicId}
+          canUpload={user?.role === "tutor" || user?.role === "admin"}
+        />
+      </Box>
 
       {/* Questions */}
       <Typography variant="h5" sx={{ mb: 2 }}>
