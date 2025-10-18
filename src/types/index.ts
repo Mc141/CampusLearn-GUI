@@ -7,6 +7,12 @@ export interface User {
   studentNumber?: string;
   modules?: string[];
   profilePicture?: string;
+  githubUsername?: string;
+  githubProfileUrl?: string;
+  githubBio?: string;
+  githubLocation?: string;
+  githubWebsite?: string;
+  githubCompany?: string;
   createdAt: Date;
   lastLogin?: Date;
 }

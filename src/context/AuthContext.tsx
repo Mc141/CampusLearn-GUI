@@ -21,6 +21,7 @@ interface AuthContextType {
   register: (userData: Partial<User>, password: string) => Promise<boolean>;
   resendConfirmation: (email: string) => Promise<boolean>;
   createUserProfile: (userData: Partial<User>) => Promise<boolean>;
+  refreshUserProfile: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -163,7 +164,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                   lastName: newUser.last_name,
                   role: newUser.role,
                   studentNumber: newUser.student_number,
-                  modules: [],
+                  modules: newUser.modules || [],
+                  profilePicture: newUser.profile_picture,
+                  githubUsername: newUser.github_username,
+                  githubProfileUrl: newUser.github_profile_url,
+                  githubBio: newUser.github_bio,
+                  githubLocation: newUser.github_location,
+                  githubWebsite: newUser.github_website,
+                  githubCompany: newUser.github_company,
                   createdAt: new Date(newUser.created_at),
                   lastLogin: newUser.last_login
                     ? new Date(newUser.last_login)
@@ -190,7 +198,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 lastName: existingByEmail.last_name,
                 role: existingByEmail.role,
                 studentNumber: existingByEmail.student_number,
-                modules: [],
+                modules: existingByEmail.modules || [],
+                profilePicture: existingByEmail.profile_picture,
+                githubUsername: existingByEmail.github_username,
+                githubProfileUrl: existingByEmail.github_profile_url,
+                githubBio: existingByEmail.github_bio,
+                githubLocation: existingByEmail.github_location,
+                githubWebsite: existingByEmail.github_website,
+                githubCompany: existingByEmail.github_company,
                 createdAt: new Date(existingByEmail.created_at),
                 lastLogin: existingByEmail.last_login
                   ? new Date(existingByEmail.last_login)
@@ -213,7 +228,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                   lastName: updatedUser.last_name,
                   role: updatedUser.role,
                   studentNumber: updatedUser.student_number,
-                  modules: [],
+                  modules: updatedUser.modules || [],
+                  profilePicture: updatedUser.profile_picture,
+                  githubUsername: updatedUser.github_username,
+                  githubProfileUrl: updatedUser.github_profile_url,
+                  githubBio: updatedUser.github_bio,
+                  githubLocation: updatedUser.github_location,
+                  githubWebsite: updatedUser.github_website,
+                  githubCompany: updatedUser.github_company,
                   createdAt: new Date(updatedUser.created_at),
                   lastLogin: updatedUser.last_login
                     ? new Date(updatedUser.last_login)
@@ -232,7 +254,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             lastName: existingUser.last_name,
             role: existingUser.role,
             studentNumber: existingUser.student_number,
-            modules: [],
+            modules: existingUser.modules || [],
+            profilePicture: existingUser.profile_picture,
+            githubUsername: existingUser.github_username,
+            githubProfileUrl: existingUser.github_profile_url,
+            githubBio: existingUser.github_bio,
+            githubLocation: existingUser.github_location,
+            githubWebsite: existingUser.github_website,
+            githubCompany: existingUser.github_company,
             createdAt: new Date(existingUser.created_at),
             lastLogin: existingUser.last_login
               ? new Date(existingUser.last_login)
@@ -431,6 +460,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const refreshUserProfile = async () => {
+    if (supabaseUser) {
+      await fetchUserProfile(supabaseUser.id);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     supabaseUser,
@@ -440,6 +475,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     resendConfirmation,
     createUserProfile,
+    refreshUserProfile,
     isLoading,
   };
 
