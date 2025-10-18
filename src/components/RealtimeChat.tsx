@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import { Box, TextField, IconButton, Paper, Typography } from "@mui/material";
 import { Send } from "@mui/icons-material";
 import { ChatMessageItem } from "./ChatMessageItem";
@@ -30,6 +36,7 @@ export const RealtimeChat: React.FC<RealtimeChatProps> = ({
   messages: initialMessages = [],
 }) => {
   const { containerRef, scrollToBottom } = useChatScroll();
+  const previousMessagesRef = useRef<ChatMessage[]>([]);
 
   const {
     messages: realtimeMessages,
@@ -60,7 +67,27 @@ export const RealtimeChat: React.FC<RealtimeChatProps> = ({
 
   useEffect(() => {
     if (onMessage) {
-      onMessage(allMessages);
+      // Check if messages have actually changed by comparing IDs
+      const currentMessageIds = allMessages
+        .map((msg) => msg.id)
+        .sort()
+        .join(",");
+      const previousMessageIds = previousMessagesRef.current
+        .map((msg) => msg.id)
+        .sort()
+        .join(",");
+
+      if (currentMessageIds !== previousMessageIds) {
+        console.log(
+          "📨 Messages changed, calling onMessage with",
+          allMessages.length,
+          "messages"
+        );
+        onMessage(allMessages);
+        previousMessagesRef.current = [...allMessages];
+      } else {
+        console.log("⏭️ Messages unchanged, skipping onMessage call");
+      }
     }
   }, [allMessages, onMessage]);
 

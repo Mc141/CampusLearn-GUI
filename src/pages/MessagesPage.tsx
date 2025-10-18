@@ -212,12 +212,20 @@ const MessagesPage: React.FC = () => {
   const handleMessageUpdate = async (messages: ChatMessage[]) => {
     if (!selectedConversation || !user) return;
 
+    console.log(
+      "🔄 handleMessageUpdate called with",
+      messages.length,
+      "messages"
+    );
+
     // Retry logic for critical message storage
     let retries = 3;
     let lastError: any;
 
     while (retries > 0) {
       try {
+        console.log(`🔄 Attempting to store messages (${4 - retries}/3)...`);
+
         // No timeout for message storage - it's critical
         await messagingService.storeMessages(
           messages,
@@ -226,7 +234,7 @@ const MessagesPage: React.FC = () => {
         );
 
         // If we get here, messages were stored successfully
-        console.log("Messages stored successfully");
+        console.log("✅ Messages stored successfully");
 
         // Try to reload conversations, but don't fail if this doesn't work
         try {
@@ -246,6 +254,11 @@ const MessagesPage: React.FC = () => {
       } catch (err) {
         lastError = err;
         retries--;
+
+        console.error(
+          `❌ Message storage failed (${retries} retries left):`,
+          err
+        );
 
         if (retries > 0) {
           console.warn(

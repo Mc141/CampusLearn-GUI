@@ -46,6 +46,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import NotificationCenter from "./NotificationCenter";
+import NotificationDropdown from "./NotificationDropdown";
 
 const drawerWidth = 240;
 
@@ -295,20 +296,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             )?.text || "Dashboard"}
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconButton
-              color="inherit"
-              onClick={() => setNotificationOpen(true)}
-              sx={{
-                color:
-                  theme.palette.mode === "light"
-                    ? theme.palette.text.primary
-                    : "white",
-              }}
-            >
-              <Badge badgeContent={3} color="error">
-                <Notifications />
-              </Badge>
-            </IconButton>
+            <NotificationDropdown />
             <IconButton
               color="inherit"
               onClick={toggleTheme}

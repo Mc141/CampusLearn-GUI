@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { AnswerReply } from '../types';
+import { notificationService } from './notificationService';
 
 export interface CreateAnswerReplyData {
   answerId: string;
@@ -74,7 +75,7 @@ export const answerReplyService = {
         throw error;
       }
 
-      return {
+      const reply = {
         id: data.id,
         answerId: data.answer_id,
         content: data.content,
@@ -85,6 +86,48 @@ export const answerReplyService = {
         createdAt: new Date(data.created_at),
         updatedAt: new Date(data.updated_at)
       };
+
+      // Create notification for the answer author (if not replying to their own answer)
+      try {
+        if (authorId) {
+          // Get answer details to find the author and topic
+          const { data: answerData } = await supabase
+            .from('answers')
+            .select(`
+              tutor_id,
+              question:questions(
+                title,
+                topic:topics(title)
+              )
+            `)
+            .eq('id', replyData.answerId)
+            .single();
+
+          if (answerData && answerData.tutor_id !== authorId) {
+            // Get replier's name
+            const { data: replierData } = await supabase
+              .from('users')
+              .select('first_name, last_name')
+              .eq('id', authorId)
+              .single();
+
+            if (replierData && answerData.question?.topic?.title) {
+              const replierName = replyData.isAnonymous ? 'Anonymous' : `${replierData.first_name} ${replierData.last_name}`;
+              await notificationService.notifyTopicReply(
+                answerData.tutor_id, 
+                replierName, 
+                answerData.question.topic.title, 
+                replyData.answerId
+              );
+            }
+          }
+        }
+      } catch (notificationError) {
+        console.error('Error creating topic reply notification:', notificationError);
+        // Don't fail the reply creation if notification fails
+      }
+
+      return reply;
     } catch (error) {
       console.error('Error in createAnswerReply:', error);
       throw error;

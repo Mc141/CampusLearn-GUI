@@ -1,5 +1,6 @@
 import { supabase, dbQuery } from '../lib/supabase';
 import type { ChatMessage } from '../hooks/useRealtimeChat';
+import { notificationService } from './notificationService';
 
 export interface Message {
   id: string;
@@ -331,6 +332,43 @@ export const messagingService = {
       if (error) {
         console.error('Error storing messages:', error);
         throw error;
+      }
+
+      console.log('Messages stored successfully');
+
+      // Create notification for the receiver (only once per message batch)
+      try {
+        // Check if we already created a notification for this message batch
+        const messageIds = messages.map(msg => msg.id).sort().join(',');
+        const notificationKey = `msg-${senderId}-${receiverId}-${messageIds}`;
+        
+        // Simple in-memory cache to prevent duplicates (clears on page refresh)
+        if (!window.notificationCache) {
+          window.notificationCache = new Set();
+        }
+        
+        if (window.notificationCache.has(notificationKey)) {
+          return; // Skip duplicate notification
+        }
+        
+        window.notificationCache.add(notificationKey);
+        
+        // Get sender's name for the notification
+        const { data: senderData } = await supabase
+          .from('users')
+          .select('first_name, last_name')
+          .eq('id', senderId)
+          .single();
+
+        if (senderData) {
+          const senderName = `${senderData.first_name} ${senderData.last_name}`;
+          const conversationId = messagingService.generateRoomName(senderId, receiverId);
+          
+          await notificationService.notifyNewMessage(receiverId, senderName, conversationId);
+        }
+      } catch (notificationError) {
+        console.error('Error creating message notification:', notificationError);
+        // Don't fail the message storage if notification fails
       }
 
       // Handle attachments if they exist

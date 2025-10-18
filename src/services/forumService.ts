@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { ForumPost, ForumReply } from '../types';
+import { notificationService } from './notificationService';
 
 export interface CreateForumPostData {
   title: string;
@@ -285,7 +286,7 @@ export const forumService = {
         throw error;
       }
 
-      return {
+      const reply = {
         id: data.id,
         postId: data.post_id,
         content: data.content,
@@ -298,6 +299,37 @@ export const forumService = {
         depth: data.depth,
         threadPath: data.thread_path
       };
+
+      // Create notification for the post author (if not replying to their own post)
+      try {
+        if (authorId) {
+          // Get post details to find the author
+          const { data: postData } = await supabase
+            .from('forum_posts')
+            .select('author_id, title')
+            .eq('id', replyData.postId)
+            .single();
+
+          if (postData && postData.author_id !== authorId) {
+            // Get replier's name
+            const { data: replierData } = await supabase
+              .from('users')
+              .select('first_name, last_name')
+              .eq('id', authorId)
+              .single();
+
+            if (replierData) {
+              const replierName = replyData.isAnonymous ? 'Anonymous' : `${replierData.first_name} ${replierData.last_name}`;
+              await notificationService.notifyForumReply(postData.author_id, replierName, postData.title, replyData.postId);
+            }
+          }
+        }
+      } catch (notificationError) {
+        console.error('Error creating forum reply notification:', notificationError);
+        // Don't fail the reply creation if notification fails
+      }
+
+      return reply;
     } catch (error) {
       console.error('Error in createForumReply:', error);
       throw error;

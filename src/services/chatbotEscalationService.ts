@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
 import { messagingService } from "./messagingService";
+import { notificationService } from "./notificationService";
 
 export interface ChatbotEscalation {
   id: string;
@@ -233,6 +234,26 @@ I'm here to help you with this question. Please feel free to ask any follow-up q
 
       // Create notification for tutor
       await this.createTutorNotification(tutorId, escalationId, 'in_app');
+
+      // Create in-app notification for the assigned tutor
+      try {
+        // Get student's name for the notification
+        const { data: studentData } = await supabase
+          .from('users')
+          .select('first_name, last_name')
+          .eq('id', escalation.student_id)
+          .single();
+
+        if (studentData) {
+          const studentName = `${studentData.first_name} ${studentData.last_name}`;
+          const moduleCode = escalation.module_code || 'General';
+          
+          await notificationService.notifyNewEscalation(tutorId, studentName, moduleCode, escalationId);
+        }
+      } catch (notificationError) {
+        console.error('Error creating escalation notification:', notificationError);
+        // Don't fail the assignment if notification fails
+      }
 
       return true;
     } catch (error) {
