@@ -53,6 +53,7 @@ export const answersService = {
           lastName: answer.tutor.last_name,
           email: answer.tutor.email,
         },
+        replies: [] // Initialize empty replies array
       }));
     } catch (error) {
       console.error('Error in getAnswersByQuestion:', error);

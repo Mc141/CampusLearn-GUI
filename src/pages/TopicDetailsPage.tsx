@@ -64,6 +64,10 @@ import { messagingService } from "../services/messagingService";
 import TopicAnswerFileUpload from "../components/TopicAnswerFileUpload";
 import TopicAnswerAttachments from "../components/TopicAnswerAttachments";
 import { topicAnswerAttachmentService } from "../services/topicAnswerAttachmentService";
+import AnswerReplies from "../components/AnswerReplies";
+import { answerReplyService } from "../services/answerReplyService";
+import AnswerReplyFileUpload from "../components/AnswerReplyFileUpload";
+import { answerReplyAttachmentService } from "../services/answerReplyAttachmentService";
 
 const TopicDetailsPage: React.FC = () => {
   const { user } = useAuth();
@@ -96,6 +100,17 @@ const TopicDetailsPage: React.FC = () => {
   const [answerAttachments, setAnswerAttachments] = useState<File[]>([]);
   const [answerFileUploadStatus, setAnswerFileUploadStatus] = useState<{
     [key: string]: "pending" | "uploading" | "completed" | "error";
+  }>({});
+  const [answerReplies, setAnswerReplies] = useState<{
+    [answerId: string]: any[];
+  }>({});
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [selectedAnswerId, setSelectedAnswerId] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [isAnonymousReply, setIsAnonymousReply] = useState(false);
+  const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
+  const [replyFileUploadStatus, setReplyFileUploadStatus] = useState<{
+    [fileName: string]: "pending" | "uploading" | "completed" | "error";
   }>({});
 
   // Tutor assignment dialog state
@@ -144,6 +159,27 @@ const TopicDetailsPage: React.FC = () => {
 
           setQuestions(questionsData);
           setAssignedTutors(tutorsData);
+
+          // Load replies for each answer
+          const repliesMap: { [answerId: string]: any[] } = {};
+          for (const question of questionsData) {
+            for (const answer of question.answers) {
+              try {
+                const replies = await answerReplyService.getRepliesByAnswer(
+                  answer.id
+                );
+                repliesMap[answer.id] = replies;
+              } catch (err) {
+                console.error(
+                  `Error loading replies for answer ${answer.id}:`,
+                  err
+                );
+                repliesMap[answer.id] = [];
+              }
+            }
+          }
+          setAnswerReplies(repliesMap);
+
           return currentTopic;
         })();
 
@@ -261,6 +297,89 @@ const TopicDetailsPage: React.FC = () => {
     } catch (err) {
       console.error("Error creating answer:", err);
       setError("Failed to create answer. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRepliesUpdated = async (answerId: string) => {
+    try {
+      const replies = await answerReplyService.getRepliesByAnswer(answerId);
+      setAnswerReplies((prev) => ({
+        ...prev,
+        [answerId]: replies,
+      }));
+    } catch (err) {
+      console.error(`Error refreshing replies for answer ${answerId}:`, err);
+    }
+  };
+
+  const handleOpenReplyDialog = (answerId: string) => {
+    setSelectedAnswerId(answerId);
+    setReplyDialogOpen(true);
+  };
+
+  const handleSubmitReply = async () => {
+    if (!replyContent.trim() || !user || !selectedAnswerId) return;
+
+    try {
+      setLoading(true);
+
+      // Create the reply first
+      const newReply = await answerReplyService.createAnswerReply(
+        {
+          answerId: selectedAnswerId,
+          content: replyContent,
+          isAnonymous: isAnonymousReply,
+        },
+        user.id
+      );
+
+      // Upload attachments if any
+      if (replyAttachments.length > 0 && newReply.id) {
+        // Update status to uploading
+        const uploadingStatus: { [fileName: string]: "uploading" } = {};
+        replyAttachments.forEach((file) => {
+          uploadingStatus[file.name] = "uploading";
+        });
+        setReplyFileUploadStatus(uploadingStatus);
+
+        try {
+          await answerReplyAttachmentService.uploadFilesToReply(
+            newReply.id,
+            replyAttachments,
+            user.id,
+            (progress) => {
+              setReplyFileUploadStatus((prev) => ({
+                ...prev,
+                [progress.fileName]: progress.status,
+              }));
+            }
+          );
+        } catch (uploadError) {
+          console.error("Error uploading reply attachments:", uploadError);
+          // Mark all files as error
+          const errorStatus: { [fileName: string]: "error" } = {};
+          replyAttachments.forEach((file) => {
+            errorStatus[file.name] = "error";
+          });
+          setReplyFileUploadStatus(errorStatus);
+        }
+      }
+
+      // Reset form
+      setReplyContent("");
+      setIsAnonymousReply(false);
+      setReplyAttachments([]);
+      setReplyFileUploadStatus({});
+      setReplyDialogOpen(false);
+      setSelectedAnswerId(null);
+
+      // Refresh replies for this answer
+      await handleRepliesUpdated(selectedAnswerId);
+    } catch (err) {
+      console.error("Error submitting reply:", err);
+      setError("Failed to submit reply. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -579,9 +698,11 @@ const TopicDetailsPage: React.FC = () => {
                   }
                   secondary={
                     <Box>
-                      <Typography variant="body2" sx={{ mb: 2 }}>
+                      <Box
+                        sx={{ mb: 2, fontSize: "0.875rem", lineHeight: 1.5 }}
+                      >
                         {question.content}
-                      </Typography>
+                      </Box>
                       <Box
                         sx={{
                           display: "flex",
@@ -596,31 +717,40 @@ const TopicDetailsPage: React.FC = () => {
                         >
                           <ThumbUp fontSize="small" />
                         </IconButton>
-                        <Typography variant="caption">
+                        <Box component="span" sx={{ fontSize: "0.75rem" }}>
                           {question.upvotes} upvotes
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </Box>
+                        <Box
+                          component="span"
+                          sx={{ fontSize: "0.75rem", color: "text.secondary" }}
+                        >
                           • {question.answerCount} answers
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </Box>
+                        <Box
+                          component="span"
+                          sx={{ fontSize: "0.75rem", color: "text.secondary" }}
+                        >
                           • Asked by{" "}
                           {question.isAnonymous
                             ? "Anonymous"
                             : `${question.student.firstName} ${question.student.lastName}`}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        </Box>
+                        <Box
+                          component="span"
+                          sx={{ fontSize: "0.75rem", color: "text.secondary" }}
+                        >
                           • {question.createdAt.toLocaleDateString()}
-                        </Typography>
+                        </Box>
                       </Box>
 
                       {/* Answers */}
                       {question.answers.length > 0 && (
                         <Accordion>
                           <AccordionSummary expandIcon={<ExpandMore />}>
-                            <Typography variant="subtitle2">
+                            <Box sx={{ fontSize: "0.875rem", fontWeight: 500 }}>
                               {question.answers.length} Answer
                               {question.answers.length !== 1 ? "s" : ""}
-                            </Typography>
+                            </Box>
                           </AccordionSummary>
                           <AccordionDetails>
                             <Stack spacing={2}>
@@ -663,6 +793,15 @@ const TopicDetailsPage: React.FC = () => {
                                     {/* Answer Attachments */}
                                     <TopicAnswerAttachments
                                       answerId={answer.id}
+                                    />
+                                    {/* Answer Replies */}
+                                    <AnswerReplies
+                                      answerId={answer.id}
+                                      replies={answerReplies[answer.id] || []}
+                                      onRepliesUpdated={() =>
+                                        handleRepliesUpdated(answer.id)
+                                      }
+                                      onOpenReplyDialog={handleOpenReplyDialog}
                                     />
                                     <Box
                                       sx={{
@@ -929,6 +1068,106 @@ const TopicDetailsPage: React.FC = () => {
             disabled={loading || !newAnswer.content}
           >
             Submit Answer
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Reply to Answer Dialog */}
+      <Dialog
+        open={replyDialogOpen}
+        onClose={() => setReplyDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Reply to Answer</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Your Reply"
+            multiline
+            rows={4}
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            margin="normal"
+            required
+            placeholder="Ask a follow-up question or provide additional information..."
+          />
+
+          {/* File Upload */}
+          <AnswerReplyFileUpload
+            userId={user?.id}
+            onFilesUploaded={(files) => {
+              setReplyAttachments(files);
+              const status: { [fileName: string]: "pending" } = {};
+              files.forEach((file) => {
+                status[file.name] = "pending";
+              });
+              setReplyFileUploadStatus(status);
+            }}
+          />
+
+          {/* Attached Files List */}
+          {replyAttachments.length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Attached Files:
+              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {replyAttachments.map((file) => (
+                  <Chip
+                    key={file.name}
+                    label={`${file.name} (${(file.size / 1024 / 1024).toFixed(
+                      2
+                    )} MB)`}
+                    color={
+                      replyFileUploadStatus[file.name] === "completed"
+                        ? "success"
+                        : replyFileUploadStatus[file.name] === "error"
+                        ? "error"
+                        : replyFileUploadStatus[file.name] === "uploading"
+                        ? "primary"
+                        : "default"
+                    }
+                    variant={
+                      replyFileUploadStatus[file.name] === "completed"
+                        ? "filled"
+                        : "outlined"
+                    }
+                    onDelete={() => {
+                      setReplyAttachments((prev) =>
+                        prev.filter((f) => f.name !== file.name)
+                      );
+                      setReplyFileUploadStatus((prev) => {
+                        const newStatus = { ...prev };
+                        delete newStatus[file.name];
+                        return newStatus;
+                      });
+                    }}
+                    deleteIcon={<Delete />}
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isAnonymousReply}
+                onChange={(e) => setIsAnonymousReply(e.target.checked)}
+              />
+            }
+            label="Reply anonymously"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReplyDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleSubmitReply}
+            variant="contained"
+            disabled={loading || !replyContent.trim()}
+          >
+            Submit Reply
           </Button>
         </DialogActions>
       </Dialog>

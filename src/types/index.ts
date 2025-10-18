@@ -47,6 +47,39 @@ export interface Answer {
   isAccepted: boolean;
   upvotes: number;
   attachments: Attachment[];
+  replies?: AnswerReply[];
+}
+
+export interface AnswerReply {
+  id: string;
+  answerId: string;
+  content: string;
+  authorId?: string;
+  isAnonymous: boolean;
+  upvotes: number;
+  isModerated: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  authorName?: string;
+  attachments?: AnswerReplyAttachment[];
+}
+
+export interface AnswerReplyAttachment {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'pdf' | 'video' | 'audio' | 'image' | 'link' | 'document';
+  url: string;
+  fileName: string;
+  filePath: string;
+  replyId: string;
+  uploadedBy?: string;
+  size: number;
+  downloads: number;
+  tags: Record<string, any>;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Attachment {

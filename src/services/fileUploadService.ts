@@ -90,6 +90,7 @@ export class FileUploadService {
         name: file.name,
         type: this.getFileType(file.name),
         url: urlData.publicUrl,
+        filePath: filePath,
         size: file.size,
         uploadedAt: new Date()
       };
