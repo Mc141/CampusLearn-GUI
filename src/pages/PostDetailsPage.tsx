@@ -49,6 +49,7 @@ import { formatDistanceToNow } from "date-fns";
 import ForumAttachments from "../components/ForumAttachments";
 import ForumFileUpload from "../components/ForumFileUpload";
 import { forumAttachmentService } from "../services/forumAttachmentService";
+import NestedReply from "../components/NestedReply";
 
 const PostDetailsPage: React.FC = () => {
   const { user } = useAuth();
@@ -57,6 +58,9 @@ const PostDetailsPage: React.FC = () => {
 
   // State management
   const [post, setPost] = useState<ForumPostWithAuthor | null>(null);
+  const [hierarchicalReplies, setHierarchicalReplies] = useState<ForumReply[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
@@ -76,8 +80,13 @@ const PostDetailsPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const postData = await forumService.getForumPost(postId);
+      const [postData, repliesData] = await Promise.all([
+        forumService.getForumPost(postId),
+        forumService.getForumRepliesHierarchical(postId),
+      ]);
+
       setPost(postData);
+      setHierarchicalReplies(repliesData);
     } catch (err) {
       console.error("Error loading post:", err);
       setError("Failed to load post. Please try again.");
@@ -161,6 +170,12 @@ const PostDetailsPage: React.FC = () => {
       setReplyAttachments([]);
       setReplyFileUploadStatus({});
       setReplyDialogOpen(false);
+
+      // Refresh hierarchical replies
+      const updatedReplies = await forumService.getForumRepliesHierarchical(
+        postId
+      );
+      setHierarchicalReplies(updatedReplies);
     } catch (err) {
       console.error("Error submitting reply:", err);
       setError("Failed to submit reply. Please try again.");
@@ -359,110 +374,42 @@ const PostDetailsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Replies Section */}
-      <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-        Replies ({post.replies.length})
-      </Typography>
+      {/* Hierarchical Replies */}
+      <Box sx={{ mt: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+          Replies ({hierarchicalReplies.length})
+        </Typography>
 
-      {post.replies.length === 0 ? (
-        <Card>
-          <CardContent sx={{ textAlign: "center", py: 4 }}>
-            <Typography variant="h6" color="text.secondary">
-              No replies yet
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Be the first to reply to this post!
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Reply />}
-              onClick={() => setReplyDialogOpen(true)}
-              sx={{ mt: 2 }}
-            >
-              Reply
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <List>
-          {post.replies.map((reply, index) => (
-            <React.Fragment key={reply.id}>
-              <ListItem alignItems="flex-start" sx={{ px: 0 }}>
-                <ListItemAvatar>
-                  <Avatar>
-                    <Person />
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 1,
-                      }}
-                    >
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        {reply.authorName}
-                        {reply.isAnonymous && (
-                          <Tooltip title="Anonymous reply">
-                            <VisibilityOff
-                              fontSize="small"
-                              color="action"
-                              sx={{ ml: 1 }}
-                            />
-                          </Tooltip>
-                        )}
-                      </Typography>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Tooltip title="Upvote">
-                          <IconButton
-                            size="small"
-                            onClick={() => upvoteReply(reply.id)}
-                          >
-                            <ThumbUp fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Typography variant="body2" color="text.secondary">
-                          {reply.upvotes}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  }
-                  secondary={
-                    <Box>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          whiteSpace: "pre-wrap",
-                          lineHeight: 1.5,
-                          mb: 1,
-                        }}
-                      >
-                        {reply.content}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDistanceToNow(reply.createdAt, {
-                          addSuffix: true,
-                        })}
-                      </Typography>
-
-                      {/* Reply Attachments */}
-                      <ForumAttachments replyId={reply.id} />
-                    </Box>
-                  }
-                />
-              </ListItem>
-              {index < post.replies.length - 1 && (
-                <Divider variant="inset" component="li" />
-              )}
-            </React.Fragment>
-          ))}
-        </List>
-      )}
+        {hierarchicalReplies.length === 0 ? (
+          <Card>
+            <CardContent sx={{ textAlign: "center", py: 4 }}>
+              <Typography variant="h6" color="text.secondary">
+                No replies yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Be the first to reply to this post!
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<Reply />}
+                onClick={() => setReplyDialogOpen(true)}
+                sx={{ mt: 2 }}
+              >
+                Reply
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          hierarchicalReplies.map((reply) => (
+            <NestedReply
+              key={reply.id}
+              reply={reply}
+              postId={postId}
+              onReplyAdded={loadPost}
+            />
+          ))
+        )}
+      </Box>
 
       {/* Reply Dialog */}
       <Dialog

@@ -12,6 +12,7 @@ export interface CreateForumReplyData {
   postId: string;
   content: string;
   isAnonymous: boolean;
+  parentReplyId?: string;
 }
 
 export interface ForumPostWithAuthor extends ForumPost {
@@ -273,7 +274,8 @@ export const forumService = {
           author_id: authorId,
           is_anonymous: replyData.isAnonymous,
           upvotes: 0,
-          is_moderated: false
+          is_moderated: false,
+          parent_reply_id: replyData.parentReplyId || null
         }])
         .select()
         .single();
@@ -291,7 +293,10 @@ export const forumService = {
         isAnonymous: data.is_anonymous,
         createdAt: new Date(data.created_at),
         upvotes: data.upvotes || 0,
-        isModerated: data.is_moderated
+        isModerated: data.is_moderated,
+        parentReplyId: data.parent_reply_id,
+        depth: data.depth,
+        threadPath: data.thread_path
       };
     } catch (error) {
       console.error('Error in createForumReply:', error);
@@ -465,5 +470,79 @@ export const forumService = {
       console.error('Error in moderateReply:', error);
       throw error;
     }
+  },
+
+  // Get replies for a post in hierarchical structure (Reddit-style)
+  async getForumRepliesHierarchical(postId: string): Promise<ForumReply[]> {
+    try {
+      const { data, error } = await supabase
+        .from('forum_replies')
+        .select(`
+          *,
+          author:users(first_name, last_name)
+        `)
+        .eq('post_id', postId)
+        .eq('is_moderated', false)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching forum replies:', error);
+        throw error;
+      }
+
+      // Convert to ForumReply format
+      const replies: ForumReply[] = (data || []).map(reply => ({
+        id: reply.id,
+        postId: reply.post_id,
+        content: reply.content,
+        authorId: reply.author_id,
+        isAnonymous: reply.is_anonymous,
+        createdAt: new Date(reply.created_at),
+        upvotes: reply.upvotes || 0,
+        isModerated: reply.is_moderated,
+        parentReplyId: reply.parent_reply_id,
+        depth: reply.depth,
+        threadPath: reply.thread_path,
+        authorName: reply.author ? 
+          `${reply.author.first_name} ${reply.author.last_name}` : 
+          'Anonymous'
+      }));
+
+      // Build hierarchical structure
+      return this.buildReplyHierarchy(replies);
+    } catch (error) {
+      console.error('Error in getForumRepliesHierarchical:', error);
+      throw error;
+    }
+  },
+
+  // Helper function to build hierarchical reply structure
+  buildReplyHierarchy(replies: ForumReply[]): ForumReply[] {
+    const replyMap = new Map<string, ForumReply>();
+    const rootReplies: ForumReply[] = [];
+
+    // First pass: create map of all replies
+    replies.forEach(reply => {
+      replyMap.set(reply.id, { ...reply, replies: [] });
+    });
+
+    // Second pass: build hierarchy
+    replies.forEach(reply => {
+      const replyWithChildren = replyMap.get(reply.id)!;
+      
+      if (reply.parentReplyId) {
+        // This is a nested reply
+        const parent = replyMap.get(reply.parentReplyId);
+        if (parent) {
+          parent.replies = parent.replies || [];
+          parent.replies.push(replyWithChildren);
+        }
+      } else {
+        // This is a root-level reply
+        rootReplies.push(replyWithChildren);
+      }
+    });
+
+    return rootReplies;
   }
 };

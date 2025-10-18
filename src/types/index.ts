@@ -101,6 +101,10 @@ export interface ForumReply {
   createdAt: Date;
   upvotes: number;
   isModerated: boolean;
+  parentReplyId?: string;
+  depth: number;
+  threadPath: string;
+  replies?: ForumReply[];
 }
 
 export interface ChatMessage {
