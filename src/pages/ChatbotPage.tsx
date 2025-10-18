@@ -1,463 +1,776 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  TextField,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Avatar,
-  IconButton,
   Paper,
-  Divider,
-  Grid,
+  TextField,
+  IconButton,
+  Typography,
+  Avatar,
   Chip,
+  Button,
   CircularProgress,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   Send,
   SmartToy,
   Person,
-  ThumbUp,
-  ThumbDown,
-  Refresh,
-  Lightbulb,
+  TrendingUp,
   School,
-  Quiz,
-  Assignment,
+  Help,
+  Clear,
+  Refresh,
+  Warning,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
-import { mockChatMessages } from "../data/mockData";
+import { chatbotService, ChatbotMessage } from "../services/chatbotService";
+import {
+  chatbotConversationService,
+  ChatbotConversation,
+} from "../services/chatbotConversationService";
+import MarkdownRenderer from "../components/MarkdownRenderer";
 
 const ChatbotPage: React.FC = () => {
   const { user } = useAuth();
-  const [messages, setMessages] = useState(mockChatMessages);
+  const [messages, setMessages] = useState<ChatbotMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentConversation, setCurrentConversation] =
+    useState<ChatbotConversation | null>(null);
+  const [contextWarning, setContextWarning] = useState<string | null>(null);
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [pendingEscalation, setPendingEscalation] = useState<{
+    messageId: string;
+    tutorModule?: string;
+    selectedModule?: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Available modules for escalation
+  const availableModules = [
+    { code: "BCS101", name: "Programming Fundamentals" },
+    { code: "BCS102", name: "Data Structures & Algorithms" },
+    { code: "BCS201", name: "Software Engineering" },
+    { code: "BCS202", name: "Database Management" },
+    { code: "DIP101", name: "Diploma Foundation" },
+    { code: "BCom", name: "Business Commerce" },
+    { code: "General", name: "General Academic Support" },
+  ];
+
+  // Load or create conversation on mount
+  useEffect(() => {
+    if (user?.id) {
+      loadConversation();
+    }
+  }, [user?.id]);
+
+  const loadConversation = async () => {
+    if (!user?.id) return;
+
+    console.log("🔄 Loading conversation for user:", user.id);
+
+    try {
+      // Try to get active conversation
+      let conversation = await chatbotConversationService.getActiveConversation(
+        user.id
+      );
+
+      console.log("📋 Active conversation result:", conversation);
+
+      if (!conversation) {
+        console.log("🆕 No active conversation found, creating new one");
+        // Create new conversation
+        conversation = await chatbotConversationService.createConversation(
+          user.id
+        );
+        if (!conversation) {
+          setError("Failed to create conversation");
+          return;
+        }
+        console.log("✅ New conversation created:", conversation);
+      } else {
+        console.log("✅ Found existing conversation:", conversation);
+      }
+
+      setCurrentConversation(conversation);
+
+      // Load messages
+      console.log("📨 Loading messages for conversation:", conversation.id);
+      const messageRecords = await chatbotConversationService.getMessages(
+        conversation.id
+      );
+      console.log("📝 Raw message records:", messageRecords);
+
+      const chatbotMessages =
+        chatbotConversationService.convertToChatbotMessages(messageRecords);
+      console.log("💬 Converted chatbot messages:", chatbotMessages);
+
+      // If no messages, add welcome message
+      if (chatbotMessages.length === 0) {
+        console.log("👋 No messages found, adding welcome message");
+        const welcomeMessage: ChatbotMessage = {
+          id: crypto.randomUUID(),
+          content: `Hello ${
+            user?.firstName || "there"
+          }! I'm your CampusLearn AI Assistant. I can help you with:\n\n• Academic questions and study tips\n• Platform navigation\n• Finding tutors and resources\n• Module-specific guidance\n\nWhat can I help you with today?`,
+          isFromBot: true,
+        };
+        setMessages([welcomeMessage]);
+      } else {
+        console.log("📚 Setting messages from database:", chatbotMessages);
+        setMessages(chatbotMessages);
+      }
+
+      // Check for context warnings
+      checkContextLimits(conversation.messageCount);
+    } catch (error) {
+      console.error("💥 Error loading conversation:", error);
+      setError("Failed to load conversation");
+    }
+  };
+
+  const checkContextLimits = (messageCount: number) => {
+    if (chatbotConversationService.shouldShowWarning(messageCount)) {
+      const remaining =
+        chatbotConversationService.getRemainingMessages(messageCount);
+      setContextWarning(
+        `⚠️ Context limit warning: Only ${remaining} messages remaining before starting a new chat.`
+      );
+    } else if (chatbotConversationService.hasReachedLimit(messageCount)) {
+      setContextWarning(
+        "🚫 Context limit reached! Please start a new chat to continue."
+      );
+    } else {
+      setContextWarning(null);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
+    console.log(
+      "🔄 Messages changed, scrolling to bottom. Message count:",
+      messages.length
+    );
     scrollToBottom();
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isLoading || !currentConversation) return;
 
-    const userMessage = {
-      id: Date.now().toString(),
+    // Check if context limit reached
+    if (currentConversation.contextLimitReached) {
+      setError("Context limit reached. Please start a new chat.");
+      return;
+    }
+
+    const userMessage: ChatbotMessage = {
+      id: crypto.randomUUID(),
       content: inputMessage,
-      isFromAI: false,
-      timestamp: new Date(),
+      isFromBot: false,
+      escalatedToTutor: false,
+      tutorModule: undefined,
+      confidenceScore: undefined,
     };
 
+    // Add user message to state
     setMessages((prev) => [...prev, userMessage]);
-    setInputMessage("");
-    setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = {
-        id: (Date.now() + 1).toString(),
-        content: generateAIResponse(inputMessage),
-        isFromAI: true,
-        timestamp: new Date(),
-        suggestions: generateSuggestions(inputMessage),
+    // Save user message to database
+    await chatbotConversationService.addMessage(currentConversation.id, {
+      content: inputMessage,
+      isFromBot: false,
+      escalatedToTutor: false,
+    });
+
+    const messageToSend = inputMessage;
+    setInputMessage("");
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await chatbotService.sendMessage(
+        messageToSend,
+        user,
+        messages,
+        currentConversation.id
+      );
+
+      const botMessage: ChatbotMessage = {
+        id: crypto.randomUUID(),
+        content: response.text,
+        isFromBot: true,
+        escalatedToTutor: response.escalated || false,
+        tutorModule: response.tutorModule,
+        confidenceScore: response.confidence,
+        needsEscalationConfirmation: response.needsEscalationConfirmation,
       };
 
-      setMessages((prev) => [...prev, aiResponse]);
-      setIsTyping(false);
-    }, 1500);
-  };
+      // Add bot message to state
+      console.log("🤖 Adding bot message to state:", botMessage);
+      setMessages((prev) => {
+        const newMessages = [...prev, botMessage];
+        console.log("📝 Updated messages state:", newMessages);
+        return newMessages;
+      });
 
-  const generateAIResponse = (input: string): string => {
-    const lowerInput = input.toLowerCase();
+      // Clear loading state immediately after showing the message
+      setLoading(false);
 
-    if (
-      lowerInput.includes("accounting") ||
-      lowerInput.includes("balance sheet")
-    ) {
-      return "I can help you with accounting concepts! A balance sheet shows a company's assets, liabilities, and equity at a specific point in time. The basic equation is Assets = Liabilities + Equity. Would you like me to explain any specific part in more detail?";
+      // Save bot message to database
+      await chatbotConversationService.addMessage(currentConversation.id, {
+        content: response.text,
+        isFromBot: true,
+        escalatedToTutor: response.escalated || false,
+        tutorModule: response.tutorModule,
+        confidenceScore: response.confidence,
+      });
+
+      // If escalation confirmation is needed, store the pending escalation
+      if (response.needsEscalationConfirmation) {
+        setPendingEscalation({
+          messageId: botMessage.id,
+          tutorModule: response.tutorModule,
+        });
+      }
+
+      // Update conversation and check limits
+      const updatedConversation =
+        await chatbotConversationService.getActiveConversation(user?.id || "");
+      if (updatedConversation) {
+        setCurrentConversation(updatedConversation);
+        checkContextLimits(updatedConversation.messageCount);
+      }
+    } catch (err) {
+      console.error("Error sending message:", err);
+      setError("Failed to send message. Please try again.");
+      setLoading(false);
     }
-
-    if (
-      lowerInput.includes("programming") ||
-      lowerInput.includes("oop") ||
-      lowerInput.includes("inheritance")
-    ) {
-      return "Object-oriented programming (OOP) is a programming paradigm based on objects and classes. Inheritance allows a class to inherit properties and methods from another class. This promotes code reusability and helps create hierarchical relationships between classes.";
-    }
-
-    if (lowerInput.includes("help") || lowerInput.includes("assignment")) {
-      return "I'm here to help with your academic questions! I can assist with study tips, explain concepts, help with assignments, and guide you to relevant resources. What specific topic would you like to explore?";
-    }
-
-    if (lowerInput.includes("study") || lowerInput.includes("tips")) {
-      return "Here are some effective study tips: 1) Create a study schedule, 2) Use active recall techniques, 3) Take regular breaks, 4) Join study groups, 5) Practice with past papers. Would you like more detailed advice on any of these?";
-    }
-
-    return "I understand you're looking for help. While I can provide general guidance on academic topics, for specific questions about your assignments or complex concepts, I recommend reaching out to our peer tutors who specialize in your subject area.";
-  };
-
-  const generateSuggestions = (input: string): string[] => {
-    const lowerInput = input.toLowerCase();
-
-    if (lowerInput.includes("accounting")) {
-      return [
-        "Balance sheet",
-        "Income statement",
-        "Cash flow statement",
-        "Working capital",
-      ];
-    }
-
-    if (lowerInput.includes("programming")) {
-      return [
-        "OOP concepts",
-        "Data structures",
-        "Algorithms",
-        "Debugging tips",
-      ];
-    }
-
-    return [
-      "Study tips",
-      "Assignment help",
-      "Module information",
-      "Tutor matching",
-    ];
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    if (currentConversation?.contextLimitReached) {
+      setError("Context limit reached. Please start a new chat.");
+      return;
+    }
     setInputMessage(suggestion);
   };
 
-  const handleFeedback = (messageId: string, isPositive: boolean) => {
-    // In a real app, this would send feedback to the backend
-    console.log(
-      `Feedback for message ${messageId}: ${
-        isPositive ? "positive" : "negative"
-      }`
-    );
+  const handleEscalationConfirm = async (confirm: boolean) => {
+    if (!pendingEscalation || !currentConversation || !user?.id) return;
+
+    console.log("🔄 Escalation confirmation:", {
+      confirm,
+      pendingEscalation,
+      currentConversation: currentConversation.id,
+      userId: user.id,
+    });
+
+    try {
+      if (confirm) {
+        console.log("✅ User confirmed escalation - triggering escalation...");
+
+        // User confirmed escalation - trigger the actual escalation
+        const tutorAssigned = await chatbotService.handleEscalation(
+          currentConversation.id,
+          user.id,
+          "User confirmed escalation request",
+          pendingEscalation.selectedModule || pendingEscalation.tutorModule,
+          0.8 // High confidence since user explicitly confirmed
+        );
+
+        console.log(
+          "🎯 Escalation triggered successfully, tutor assigned:",
+          tutorAssigned
+        );
+
+        // Update the message to show escalation result
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === pendingEscalation.messageId
+              ? {
+                  ...msg,
+                  escalatedToTutor: tutorAssigned,
+                  needsEscalationConfirmation: false,
+                  content: msg.content.replace(
+                    "Please confirm if you'd like me to do this.",
+                    tutorAssigned
+                      ? `✅ **Escalation confirmed!** I've connected you with a human tutor for ${
+                          pendingEscalation.selectedModule ||
+                          pendingEscalation.tutorModule
+                        }. You should receive a message from them shortly.`
+                      : `⚠️ **Escalation submitted!** Unfortunately, there are currently no tutors available for ${
+                          pendingEscalation.selectedModule ||
+                          pendingEscalation.tutorModule
+                        }. Your request has been queued and you'll be notified when a tutor becomes available.`
+                  ),
+                }
+              : msg
+          )
+        );
+      } else {
+        // User declined escalation - update the message
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === pendingEscalation.messageId
+              ? {
+                  ...msg,
+                  needsEscalationConfirmation: false,
+                  content: msg.content.replace(
+                    "Please confirm if you'd like me to do this.",
+                    "❌ **Escalation declined.** No problem! Feel free to ask me anything else or try again later if you need human assistance."
+                  ),
+                }
+              : msg
+          )
+        );
+      }
+
+      // Clear pending escalation
+      setPendingEscalation(null);
+    } catch (error) {
+      console.error("Error handling escalation confirmation:", error);
+      setError("Failed to process escalation. Please try again.");
+    }
   };
 
-  const handleRefresh = () => {
-    setMessages(mockChatMessages);
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const handleClearChat = async () => {
+    if (!currentConversation) return;
+
+    try {
+      await chatbotConversationService.clearConversation(
+        currentConversation.id
+      );
+
+      // Reset to welcome message
+      const welcomeMessage: ChatbotMessage = {
+        id: crypto.randomUUID(),
+        content: `Hello ${
+          user?.firstName || "there"
+        }! I'm your CampusLearn AI Assistant. I can help you with:\n\n• Academic questions and study tips\n• Platform navigation\n• Finding tutors and resources\n• Module-specific guidance\n\nWhat can I help you with today?`,
+        isFromBot: true,
+      };
+      setMessages([welcomeMessage]);
+      setContextWarning(null);
+      setShowClearDialog(false);
+    } catch (error) {
+      console.error("Error clearing chat:", error);
+      setError("Failed to clear chat");
+    }
+  };
+
+  const handleStartNewChat = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Deactivate current conversation
+      if (currentConversation) {
+        await chatbotConversationService.deactivateConversation(
+          currentConversation.id
+        );
+      }
+
+      // Create new conversation
+      const newConversation =
+        await chatbotConversationService.createConversation(user.id);
+      if (!newConversation) {
+        setError("Failed to create new conversation");
+        return;
+      }
+
+      setCurrentConversation(newConversation);
+
+      // Reset to welcome message
+      const welcomeMessage: ChatbotMessage = {
+        id: crypto.randomUUID(),
+        content: `Hello ${
+          user?.firstName || "there"
+        }! I'm your CampusLearn AI Assistant. I can help you with:\n\n• Academic questions and study tips\n• Platform navigation\n• Finding tutors and resources\n• Module-specific guidance\n\nWhat can I help you with today?`,
+        isFromBot: true,
+      };
+      setMessages([welcomeMessage]);
+      setContextWarning(null);
+      setError(null);
+    } catch (error) {
+      console.error("Error starting new chat:", error);
+      setError("Failed to start new chat");
+    }
   };
 
   const quickActions = [
     {
-      label: "Study Tips",
-      icon: <Lightbulb />,
-      action: "Can you give me some study tips?",
-    },
-    {
-      label: "Assignment Help",
-      icon: <Assignment />,
-      action: "I need help with my assignment",
-    },
-    {
-      label: "Module Info",
       icon: <School />,
-      action: "Tell me about my modules",
+      label: "Module Help",
+      query: "I need help with my modules",
     },
-    { label: "Find Tutor", icon: <Quiz />, action: "Help me find a tutor" },
+    {
+      icon: <Person />,
+      label: "Find Tutor",
+      query: "How do I find a tutor for my subject?",
+    },
+    {
+      icon: <TrendingUp />,
+      label: "Study Tips",
+      query: "Give me some study tips",
+    },
+    {
+      icon: <Help />,
+      label: "Platform Help",
+      query: "How do I use CampusLearn?",
+    },
   ];
 
-  return (
-    <Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          AI Tutor Assistant
-        </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<Refresh />}
-          onClick={handleRefresh}
-        >
-          New Chat
-        </Button>
-      </Box>
+  const canSendMessage =
+    !isLoading &&
+    inputMessage.trim() &&
+    !currentConversation?.contextLimitReached;
 
-      <Grid container spacing={3}>
-        {/* Chat Interface */}
-        <Grid item xs={12} md={8}>
-          <Card
+  return (
+    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <Paper sx={{ p: 2, borderRadius: 0, flexShrink: 0 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar sx={{ bgcolor: "primary.main" }}>
+              <SmartToy />
+            </Avatar>
+            <Box>
+              <Typography variant="h6">CampusLearn AI Assistant</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Your 24/7 academic support companion
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              startIcon={<Clear />}
+              onClick={() => setShowClearDialog(true)}
+              disabled={
+                !currentConversation || currentConversation.messageCount === 0
+              }
+            >
+              Clear Chat
+            </Button>
+            {currentConversation?.contextLimitReached && (
+              <Button
+                startIcon={<Refresh />}
+                onClick={handleStartNewChat}
+                variant="contained"
+              >
+                Start New Chat
+              </Button>
+            )}
+          </Box>
+        </Box>
+      </Paper>
+
+      {/* Messages Area */}
+      <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
+        {/* Context Warning */}
+        {contextWarning && (
+          <Alert
+            severity={
+              currentConversation?.contextLimitReached ? "error" : "warning"
+            }
+            sx={{ mb: 2 }}
+            icon={<Warning />}
+          >
+            {contextWarning}
+          </Alert>
+        )}
+
+        {/* Error */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Messages */}
+        {messages.map((message, index) => (
+          <Box
+            key={index}
             sx={{
-              height: "calc(100vh - 200px)",
               display: "flex",
-              flexDirection: "column",
+              justifyContent: message.isFromBot ? "flex-start" : "flex-end",
+              mb: 2,
             }}
           >
-            <CardContent
-              sx={{ flex: 1, display: "flex", flexDirection: "column", p: 0 }}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 1,
+                maxWidth: "80%",
+              }}
             >
-              {/* Chat Header */}
-              <Box
+              {message.isFromBot && (
+                <Avatar sx={{ bgcolor: "primary.main", width: 32, height: 32 }}>
+                  <SmartToy fontSize="small" />
+                </Avatar>
+              )}
+
+              <Paper
                 sx={{
-                  p: 3,
-                  borderBottom: 1,
-                  borderColor: "divider",
-                  background:
-                    "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-                  color: "white",
-                  borderRadius: "16px 16px 0 0",
+                  p: 2,
+                  maxWidth: "70%",
+                  minWidth: "fit-content",
+                  bgcolor: message.isFromBot ? "grey.100" : "primary.main",
+                  color: message.isFromBot
+                    ? "text.primary"
+                    : "primary.contrastText",
+                  "& .MuiTypography-root": {
+                    color: message.isFromBot
+                      ? "text.primary"
+                      : "primary.contrastText",
+                  },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Avatar sx={{ bgcolor: "white", color: "primary.main" }}>
-                    <SmartToy />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                      CampusLearn AI Assistant
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                      Your 24/7 academic support companion
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
+                <MarkdownRenderer
+                  content={message.content}
+                  isUserMessage={!message.isFromBot}
+                />
 
-              {/* Messages */}
-              <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
-                <List>
-                  {messages.map((message, index) => (
-                    <React.Fragment key={message.id}>
-                      <ListItem sx={{ px: 0, py: 1 }}>
-                        <ListItemIcon>
-                          {message.isFromAI ? (
-                            <Avatar sx={{ bgcolor: "primary.main" }}>
-                              <SmartToy />
-                            </Avatar>
-                          ) : (
-                            <Avatar sx={{ bgcolor: "secondary.main" }}>
-                              <Person />
-                            </Avatar>
-                          )}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Box>
-                              <Typography variant="body1" sx={{ mb: 1 }}>
-                                {message.content}
-                              </Typography>
-                              {message.suggestions &&
-                                message.suggestions.length > 0 && (
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      flexWrap: "wrap",
-                                      gap: 1,
-                                      mb: 1,
-                                    }}
-                                  >
-                                    {message.suggestions.map((suggestion) => (
-                                      <Chip
-                                        key={suggestion}
-                                        label={suggestion}
-                                        size="small"
-                                        variant="outlined"
-                                        onClick={() =>
-                                          handleSuggestionClick(suggestion)
-                                        }
-                                        sx={{ cursor: "pointer" }}
-                                      />
-                                    ))}
-                                  </Box>
-                                )}
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {message.timestamp.toLocaleTimeString()}
-                                </Typography>
-                                {message.isFromAI && (
-                                  <Box sx={{ display: "flex", gap: 0.5 }}>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() =>
-                                        handleFeedback(message.id, true)
-                                      }
-                                    >
-                                      <ThumbUp fontSize="small" />
-                                    </IconButton>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() =>
-                                        handleFeedback(message.id, false)
-                                      }
-                                    >
-                                      <ThumbDown fontSize="small" />
-                                    </IconButton>
-                                  </Box>
-                                )}
-                              </Box>
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                      {index < messages.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-
-                  {isTyping && (
-                    <ListItem sx={{ px: 0, py: 1 }}>
-                      <ListItemIcon>
-                        <Avatar sx={{ bgcolor: "primary.main" }}>
-                          <SmartToy />
-                        </Avatar>
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <CircularProgress size={16} />
-                            <Typography variant="body2" color="text.secondary">
-                              AI is typing...
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                  )}
-                </List>
-                <div ref={messagesEndRef} />
-              </Box>
-
-              {/* Input */}
-              <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-                <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    maxRows={4}
-                    placeholder="Ask me anything about your studies..."
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    disabled={isTyping}
-                  />
-                  <Button
-                    variant="contained"
-                    onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isTyping}
-                    startIcon={<Send />}
-                  >
-                    Send
-                  </Button>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Sidebar */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                Quick Actions
-              </Typography>
-              <Grid container spacing={2}>
-                {quickActions.map((action) => (
-                  <Grid item xs={12} key={action.label}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={action.icon}
-                      onClick={() => setInputMessage(action.action)}
-                      sx={{ justifyContent: "flex-start" }}
+                {message.needsEscalationConfirmation && (
+                  <Box sx={{ mt: 2 }}>
+                    <Box sx={{ mb: 2, textAlign: "center" }}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        Please select the module you need help with:
+                      </Typography>
+                      <FormControl size="small" sx={{ minWidth: 200 }}>
+                        <Select
+                          value={pendingEscalation?.selectedModule || ""}
+                          onChange={(e) => {
+                            if (pendingEscalation) {
+                              setPendingEscalation({
+                                ...pendingEscalation,
+                                selectedModule: e.target.value,
+                              });
+                            }
+                          }}
+                          displayEmpty
+                        >
+                          <MenuItem value="" disabled>
+                            Select Module
+                          </MenuItem>
+                          {availableModules.map((module) => (
+                            <MenuItem key={module.code} value={module.code}>
+                              {module.code} - {module.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        justifyContent: "center",
+                      }}
                     >
-                      {action.label}
-                    </Button>
-                  </Grid>
-                ))}
-              </Grid>
-            </CardContent>
-          </Card>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        size="small"
+                        onClick={() => handleEscalationConfirm(true)}
+                        disabled={
+                          pendingEscalation?.messageId !== message.id ||
+                          !pendingEscalation?.selectedModule
+                        }
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.9rem",
+                          textTransform: "none",
+                          px: 3,
+                          py: 1,
+                          background:
+                            "linear-gradient(45deg, #4caf50 30%, #2e7d32 90%)",
+                          boxShadow: "0 3px 5px 2px rgba(76, 175, 80, .3)",
+                          "&:hover": {
+                            background:
+                              "linear-gradient(45deg, #388e3c 30%, #1b5e20 90%)",
+                            boxShadow: "0 4px 8px 2px rgba(76, 175, 80, .4)",
+                          },
+                          "&:disabled": {
+                            background: "rgba(0, 0, 0, 0.12)",
+                            color: "rgba(0, 0, 0, 0.26)",
+                            boxShadow: "none",
+                          },
+                        }}
+                      >
+                        ✅ Yes, connect me with a tutor
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        size="small"
+                        onClick={() => handleEscalationConfirm(false)}
+                        disabled={pendingEscalation?.messageId !== message.id}
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "0.9rem",
+                          textTransform: "none",
+                          px: 3,
+                          py: 1,
+                          borderWidth: 2,
+                          "&:hover": {
+                            borderWidth: 2,
+                            backgroundColor: "rgba(255, 152, 0, 0.04)",
+                          },
+                          "&:disabled": {
+                            borderColor: "rgba(0, 0, 0, 0.12)",
+                            color: "rgba(0, 0, 0, 0.26)",
+                          },
+                        }}
+                      >
+                        ❌ No, I'll try something else
+                      </Button>
+                    </Box>
+                  </Box>
+                )}
 
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                AI Capabilities
-              </Typography>
-              <List>
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <School color="primary" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Academic Support"
-                    secondary="Answer questions about your modules"
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <Assignment color="secondary" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Assignment Help"
-                    secondary="Guidance on assignments and projects"
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <Lightbulb color="warning" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Study Tips"
-                    secondary="Effective learning strategies"
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <Quiz color="success" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Tutor Matching"
-                    secondary="Connect with peer tutors"
-                  />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+                {message.escalatedToTutor && (
+                  <Alert severity="info" sx={{ mt: 1, fontSize: "0.875rem" }}>
+                    This question has been escalated to a human tutor for{" "}
+                    {message.tutorModule || "your module"}.
+                  </Alert>
+                )}
+              </Paper>
+
+              {!message.isFromBot && (
+                <Avatar sx={{ bgcolor: "primary.main", width: 32, height: 32 }}>
+                  <Person fontSize="small" />
+                </Avatar>
+              )}
+            </Box>
+          </Box>
+        ))}
+
+        {/* Loading Indicator */}
+        {isLoading && (
+          <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Avatar sx={{ bgcolor: "primary.main", width: 32, height: 32 }}>
+                <SmartToy fontSize="small" />
+              </Avatar>
+              <Paper sx={{ p: 2, bgcolor: "grey.100" }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <CircularProgress size={16} />
+                  <Typography variant="body2">AI is thinking...</Typography>
+                </Box>
+              </Paper>
+            </Box>
+          </Box>
+        )}
+
+        <div ref={messagesEndRef} />
+      </Box>
+
+      {/* Quick Actions */}
+      {messages.length <= 1 && (
+        <Box sx={{ p: 2, borderTop: 1, borderColor: "divider", flexShrink: 0 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            Quick Actions:
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            {quickActions.map((action, index) => (
+              <Chip
+                key={index}
+                icon={action.icon}
+                label={action.label}
+                onClick={() => handleSuggestionClick(action.query)}
+                disabled={currentConversation?.contextLimitReached}
+                sx={{ cursor: "pointer" }}
+              />
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {/* Input */}
+      <Paper sx={{ p: 2, borderRadius: 0, flexShrink: 0 }}>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "flex-end" }}>
+          <TextField
+            fullWidth
+            placeholder={
+              currentConversation?.contextLimitReached
+                ? "Context limit reached. Please start a new chat."
+                : "Ask me anything about CampusLearn, your modules, or academic support..."
+            }
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isLoading || currentConversation?.contextLimitReached}
+            multiline
+            maxRows={3}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 3,
+                paddingRight: 1,
+              },
+            }}
+          />
+          <IconButton
+            onClick={handleSendMessage}
+            disabled={!canSendMessage}
+            sx={{
+              bgcolor: "primary.main",
+              color: "white",
+              width: 48,
+              height: 48,
+              flexShrink: 0,
+              "&:hover": {
+                bgcolor: "primary.dark",
+              },
+              "&:disabled": {
+                bgcolor: "grey.300",
+              },
+            }}
+          >
+            <Send />
+          </IconButton>
+        </Box>
+      </Paper>
+
+      {/* Clear Chat Dialog */}
+      <Dialog open={showClearDialog} onClose={() => setShowClearDialog(false)}>
+        <DialogTitle>Clear Chat History</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to clear all messages in this chat? This
+            action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowClearDialog(false)}>Cancel</Button>
+          <Button onClick={handleClearChat} color="error" variant="contained">
+            Clear Chat
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

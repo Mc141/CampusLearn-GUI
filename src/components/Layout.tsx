@@ -120,6 +120,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         icon: <People />,
         path: "/tutor-matching",
       });
+      baseItems.splice(2, 0, {
+        text: "Escalations",
+        icon: <Assignment />,
+        path: "/tutor/escalations",
+      });
     }
 
     if (user?.role === "admin") {
@@ -142,6 +147,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         text: "Admin Panel",
         icon: <School />,
         path: "/admin",
+      });
+      baseItems.push({
+        text: "Escalation Management",
+        icon: <Assignment />,
+        path: "/admin/escalations",
       });
       baseItems.push({
         text: "Notifications",

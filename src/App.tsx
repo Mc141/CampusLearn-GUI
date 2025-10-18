@@ -9,13 +9,11 @@ import StudentDashboard from "./pages/StudentDashboard";
 import TutorDashboard from "./pages/TutorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ForumPage from "./pages/ForumPage";
-import PostDetailsPage from "./pages/PostDetailsPage";
-import ForumModerationPage from "./pages/ForumModerationPage";
+import ChatbotPage from "./pages/ChatbotPage";
 import MessagesPage from "./pages/MessagesPage";
 import ProfilePage from "./pages/ProfilePage";
 import TopicsPage from "./pages/TopicsPage";
 import QuestionsPage from "./pages/QuestionsPage";
-import ChatbotPage from "./pages/ChatbotPage";
 import TutorRegistrationPage from "./pages/TutorRegistrationPage";
 import ResourceManagementPage from "./pages/ResourceManagementPage";
 import NotificationManagementPage from "./pages/NotificationManagementPage";
@@ -26,6 +24,10 @@ import TopicDetailsPage from "./pages/TopicDetailsPage";
 import TutorApplicationPage from "./pages/TutorApplicationPage";
 import TutorApplicationManagementPage from "./pages/TutorApplicationManagementPage";
 import TutorModuleAssignmentPage from "./pages/TutorModuleAssignmentPage";
+import PostDetailsPage from "./pages/PostDetailsPage";
+import ForumModerationPage from "./pages/ForumModerationPage";
+import TutorEscalationDashboard from "./pages/TutorEscalationDashboard";
+import AdminEscalationManagement from "./pages/AdminEscalationManagement";
 
 const App: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -101,6 +103,26 @@ const App: React.FC = () => {
         <Route
           path="/tutor-module-assignment"
           element={<TutorModuleAssignmentPage />}
+        />
+        <Route
+          path="/tutor/escalations"
+          element={
+            user?.role === "tutor" ? (
+              <TutorEscalationDashboard />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/escalations"
+          element={
+            user?.role === "admin" ? (
+              <AdminEscalationManagement />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
