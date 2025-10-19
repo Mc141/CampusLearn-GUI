@@ -224,4 +224,159 @@ export const questionsService = {
       throw error;
     }
   },
+
+  // Get all questions by a specific student
+  async getQuestionsByStudent(studentId: string): Promise<QuestionWithDetails[]> {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select(`
+          *,
+          student:users!questions_student_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          answers:answers(
+            id,
+            content,
+            tutor:users!answers_tutor_id_fkey(
+              id,
+              first_name,
+              last_name,
+              email
+            ),
+            is_accepted,
+            upvotes,
+            created_at
+          ),
+          topic:topics(
+            id,
+            title,
+            module_code
+          )
+        `)
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching questions by student:', error);
+        throw error;
+      }
+
+      return data.map(question => ({
+        id: question.id,
+        title: question.title,
+        content: question.content,
+        isAnonymous: question.is_anonymous,
+        tags: question.tags || [],
+        status: question.status,
+        topicId: question.topic_id,
+        studentId: question.student_id,
+        createdAt: new Date(question.created_at),
+        updatedAt: question.updated_at ? new Date(question.updated_at) : new Date(question.created_at),
+        student: {
+          id: question.student.id,
+          firstName: question.student.first_name,
+          lastName: question.student.last_name,
+          email: question.student.email,
+        },
+        answers: question.answers.map(answer => ({
+          id: answer.id,
+          content: answer.content,
+          tutor: {
+            id: answer.tutor.id,
+            firstName: answer.tutor.first_name,
+            lastName: answer.tutor.last_name,
+            email: answer.tutor.email,
+          },
+          isAccepted: answer.is_accepted,
+          upvotes: answer.upvotes,
+          createdAt: new Date(answer.created_at),
+        })),
+        answerCount: question.answers.length,
+      }));
+    } catch (error) {
+      console.error('Error in getQuestionsByStudent:', error);
+      throw error;
+    }
+  },
+
+  // Get all questions (for admin dashboard)
+  async getAllQuestions(): Promise<QuestionWithDetails[]> {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select(`
+          *,
+          student:users!questions_student_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          answers:answers(
+            id,
+            content,
+            tutor:users!answers_tutor_id_fkey(
+              id,
+              first_name,
+              last_name,
+              email
+            ),
+            is_accepted,
+            upvotes,
+            created_at
+          ),
+          topic:topics(
+            id,
+            title,
+            module_code
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching all questions:', error);
+        throw error;
+      }
+
+      return data.map(question => ({
+        id: question.id,
+        title: question.title,
+        content: question.content,
+        isAnonymous: question.is_anonymous,
+        tags: question.tags || [],
+        status: question.status,
+        topicId: question.topic_id,
+        studentId: question.student_id,
+        createdAt: new Date(question.created_at),
+        updatedAt: question.updated_at ? new Date(question.updated_at) : new Date(question.created_at),
+        student: {
+          id: question.student.id,
+          firstName: question.student.first_name,
+          lastName: question.student.last_name,
+          email: question.student.email,
+        },
+        answers: question.answers.map(answer => ({
+          id: answer.id,
+          content: answer.content,
+          tutor: {
+            id: answer.tutor.id,
+            firstName: answer.tutor.first_name,
+            lastName: answer.tutor.last_name,
+            email: answer.tutor.email,
+          },
+          isAccepted: answer.is_accepted,
+          upvotes: answer.upvotes,
+          createdAt: new Date(answer.created_at),
+        })),
+        answerCount: question.answers.length,
+      }));
+    } catch (error) {
+      console.error('Error in getAllQuestions:', error);
+      throw error;
+    }
+  },
 };

@@ -543,21 +543,6 @@ const ProfilePage: React.FC = () => {
                       }
                       label="Email Notifications"
                     />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={profileData.smsNotifications}
-                          onChange={(e) =>
-                            handleInputChange(
-                              "smsNotifications",
-                              e.target.checked
-                            )
-                          }
-                          disabled={!isEditing}
-                        />
-                      }
-                      label="SMS Notifications"
-                    />
                   </FormGroup>
                 </Grid>
               </Grid>

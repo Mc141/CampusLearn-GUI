@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Grid,
@@ -22,6 +22,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import {
   People,
@@ -38,49 +40,140 @@ import {
   Analytics,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
-import { mockTopics, mockQuestions, mockNotifications } from "../data/mockData";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { topicsService } from "../services/topicsService";
+import { questionsService } from "../services/questionsService";
+import { notificationService } from "../services/notificationService";
+import { messagingService } from "../services/messagingService";
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [allTopics] = useState(mockTopics);
-  const [allQuestions] = useState(mockQuestions);
-  const [notifications] = useState(mockNotifications);
-  const [recentUsers] = useState([
-    {
-      id: "1",
-      name: "John Doe",
-      email: "john@belgiumcampus.ac.za",
-      role: "Student",
-      status: "Active",
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      email: "jane@belgiumcampus.ac.za",
-      role: "Tutor",
-      status: "Active",
-    },
-    {
-      id: "3",
-      name: "Mike Johnson",
-      email: "mike@belgiumcampus.ac.za",
-      role: "Student",
-      status: "Pending",
-    },
-  ]);
+  const navigate = useNavigate();
+  const [allTopics, setAllTopics] = useState<any[]>([]);
+  const [allQuestions, setAllQuestions] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [recentUsers, setRecentUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeTopics: 0,
+    questionsAsked: 0,
+    platformUsage: 0,
+  });
 
-  const stats = [
-    { label: "Total Users", value: 156, icon: <People />, color: "primary" },
-    { label: "Active Topics", value: 23, icon: <Topic />, color: "secondary" },
+  // Load admin dashboard data
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAdminData = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Load all topics
+        const topics = await topicsService.getAllTopics();
+        if (!isMounted) return;
+        setAllTopics(topics.slice(0, 5));
+
+        // Load all questions
+        const questions = await questionsService.getAllQuestions();
+        if (!isMounted) return;
+        setAllQuestions(questions.slice(0, 5));
+
+        // Load recent users
+        const { data: users, error: usersError } = await supabase
+          .from("users")
+          .select("id, first_name, last_name, email, role, created_at")
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (usersError) throw usersError;
+        if (!isMounted) return;
+        setRecentUsers(users || []);
+
+        // Load notifications
+        const userNotifications = await notificationService.getNotifications(
+          user.id,
+          5
+        );
+        if (!isMounted) return;
+        setNotifications(userNotifications);
+
+        // Calculate stats
+        const { data: userCount, error: userCountError } = await supabase
+          .from("users")
+          .select("id", { count: "exact" });
+
+        if (userCountError) throw userCountError;
+
+        const activeTopicsCount = topics.filter(
+          (topic) => topic.is_active
+        ).length;
+        const questionsCount = questions.length;
+
+        // Calculate platform usage (based on active users and engagement)
+        const platformUsage = Math.min(
+          100,
+          Math.round(
+            (activeTopicsCount * 10 +
+              questionsCount * 5 +
+              (userCount?.length || 0) * 2) /
+              3
+          )
+        );
+
+        if (!isMounted) return;
+        setStats({
+          totalUsers: userCount?.length || 0,
+          activeTopics: activeTopicsCount,
+          questionsAsked: questionsCount,
+          platformUsage: platformUsage,
+        });
+      } catch (err) {
+        console.error("Error loading admin dashboard data:", err);
+        if (isMounted) {
+          setError("Failed to load dashboard data. Please try again.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadAdminData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const dashboardStats = [
+    {
+      label: "Total Users",
+      value: stats.totalUsers,
+      icon: <People />,
+      color: "primary",
+    },
+    {
+      label: "Active Topics",
+      value: stats.activeTopics,
+      icon: <Topic />,
+      color: "secondary",
+    },
     {
       label: "Questions Asked",
-      value: 89,
+      value: stats.questionsAsked,
       icon: <QuestionAnswer />,
       color: "success",
     },
     {
       label: "Platform Usage",
-      value: 87,
+      value: stats.platformUsage,
       icon: <TrendingUp />,
       color: "warning",
     },
@@ -88,369 +181,468 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-        Admin Dashboard, {user?.firstName}! ⚙️
-      </Typography>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {stats.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <Avatar sx={{ bgcolor: `${stat.color}.main`, mr: 2 }}>
-                    {stat.icon}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                      {stat.value}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {stat.label}
-                    </Typography>
-                  </Box>
-                </Box>
-                {stat.label === "Platform Usage" && (
-                  <LinearProgress
-                    variant="determinate"
-                    value={stat.value}
-                    sx={{ mt: 1 }}
-                  />
-                )}
-              </CardContent>
-            </Card>
+      {loading ? (
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="400px"
+        >
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+            Admin Dashboard, {user?.firstName}! ⚙️
+          </Typography>
+
+          {/* Stats Cards */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {dashboardStats.map((stat, index) => (
+              <Grid item xs={12} sm={6} md={3} key={index}>
+                <Card>
+                  <CardContent>
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                      <Avatar sx={{ bgcolor: `${stat.color}.main`, mr: 2 }}>
+                        {stat.icon}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                          {stat.value}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {stat.label}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    {stat.label === "Platform Usage" && (
+                      <LinearProgress
+                        variant="determinate"
+                        value={stat.value}
+                        sx={{ mt: 1 }}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
 
-      <Grid container spacing={3}>
-        {/* Recent Users */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Recent Users
-                </Typography>
-                <Button variant="outlined" size="small" startIcon={<Add />}>
-                  Add User
-                </Button>
-              </Box>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Role</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {recentUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <Box sx={{ display: "flex", alignItems: "center" }}>
-                            <Avatar sx={{ width: 24, height: 24, mr: 1 }}>
-                              {user.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </Avatar>
-                            {user.name}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={user.role}
-                            size="small"
-                            color={
-                              user.role === "Tutor" ? "secondary" : "primary"
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={user.status}
-                            size="small"
-                            color={
-                              user.status === "Active" ? "success" : "warning"
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <IconButton size="small">
-                            <AdminPanelSettings />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+          <Grid container spacing={3}>
+            {/* Recent Users */}
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Recent Users
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<Add />}
+                      onClick={() => navigate("/admin/users")}
+                    >
+                      Manage Users
+                    </Button>
+                  </Box>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Name</TableCell>
+                          <TableCell>Role</TableCell>
+                          <TableCell>Email</TableCell>
+                          <TableCell>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {recentUsers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={4} align="center">
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                No users found.
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          recentUsers.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell>
+                                <Box
+                                  sx={{ display: "flex", alignItems: "center" }}
+                                >
+                                  <Avatar sx={{ width: 24, height: 24, mr: 1 }}>
+                                    {`${user.first_name?.[0] || ""}${
+                                      user.last_name?.[0] || ""
+                                    }`}
+                                  </Avatar>
+                                  {`${user.first_name || ""} ${
+                                    user.last_name || ""
+                                  }`}
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={user.role}
+                                  size="small"
+                                  color={
+                                    user.role === "tutor"
+                                      ? "secondary"
+                                      : user.role === "admin"
+                                      ? "error"
+                                      : "primary"
+                                  }
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Typography
+                                  variant="body2"
+                                  sx={{ fontSize: "0.75rem" }}
+                                >
+                                  {user.email}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <IconButton
+                                  size="small"
+                                  onClick={() =>
+                                    navigate(`/admin/users/${user.id}`)
+                                  }
+                                >
+                                  <AdminPanelSettings />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+            </Grid>
 
-        {/* Platform Analytics */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Platform Analytics
-                </Typography>
-                <Analytics color="primary" />
-              </Box>
-              <List>
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <People />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="User Growth"
-                    secondary="15% increase this month"
-                  />
-                  <LinearProgress
-                    variant="determinate"
-                    value={75}
-                    sx={{ width: 100 }}
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <Topic />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Topic Engagement"
-                    secondary="Average 8.5 responses per topic"
-                  />
-                  <LinearProgress
-                    variant="determinate"
-                    value={85}
-                    sx={{ width: 100 }}
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <QuestionAnswer />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Response Time"
-                    secondary="Average 2.3 hours"
-                  />
-                  <LinearProgress
-                    variant="determinate"
-                    value={90}
-                    sx={{ width: 100 }}
-                  />
-                </ListItem>
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* All Topics Management */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  All Topics
-                </Typography>
-                <Button variant="outlined" size="small" startIcon={<Add />}>
-                  Create Topic
-                </Button>
-              </Box>
-              <List>
-                {allTopics.map((topic, index) => (
-                  <React.Fragment key={topic.id}>
+            {/* Platform Analytics */}
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Platform Analytics
+                    </Typography>
+                    <Analytics color="primary" />
+                  </Box>
+                  <List>
                     <ListItem sx={{ px: 0 }}>
                       <ListItemIcon>
-                        <School color="primary" />
+                        <People />
                       </ListItemIcon>
                       <ListItemText
-                        primary={topic.title}
-                        secondary={
-                          <Box>
-                            <div
-                              style={{
-                                fontSize: "0.875rem",
-                                color: "inherit",
-                                opacity: 0.7,
-                              }}
+                        primary="User Growth"
+                        secondary={`${stats.totalUsers} total users registered`}
+                      />
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(100, stats.totalUsers * 2)}
+                        sx={{ width: 100 }}
+                      />
+                    </ListItem>
+                    <Divider />
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemIcon>
+                        <Topic />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Topic Engagement"
+                        secondary={`${stats.activeTopics} active topics`}
+                      />
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(100, stats.activeTopics * 5)}
+                        sx={{ width: 100 }}
+                      />
+                    </ListItem>
+                    <Divider />
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemIcon>
+                        <QuestionAnswer />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Question Activity"
+                        secondary={`${stats.questionsAsked} questions asked`}
+                      />
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(100, stats.questionsAsked * 2)}
+                        sx={{ width: 100 }}
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* All Topics Management */}
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      All Topics
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<Add />}
+                      onClick={() => navigate("/topics")}
+                    >
+                      Manage Topics
+                    </Button>
+                  </Box>
+                  <List>
+                    {allTopics.length === 0 ? (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ p: 2 }}
+                      >
+                        No topics found.
+                      </Typography>
+                    ) : (
+                      allTopics.map((topic, index) => (
+                        <React.Fragment key={topic.id}>
+                          <ListItem sx={{ px: 0 }}>
+                            <ListItemIcon>
+                              <School color="primary" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={topic.title}
+                              secondary={
+                                <Box>
+                                  <div
+                                    style={{
+                                      fontSize: "0.875rem",
+                                      color: "inherit",
+                                      opacity: 0.7,
+                                    }}
+                                  >
+                                    {topic.description}
+                                  </div>
+                                  <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
+                                    <Chip
+                                      label={topic.module_code}
+                                      size="small"
+                                      color="primary"
+                                    />
+                                    <Chip
+                                      label={`${
+                                        topic.subscriber_count || 0
+                                      } subscribers`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                    <Chip
+                                      label={
+                                        topic.is_active ? "Active" : "Inactive"
+                                      }
+                                      size="small"
+                                      color={
+                                        topic.is_active ? "success" : "default"
+                                      }
+                                    />
+                                  </Box>
+                                </Box>
+                              }
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={() => navigate(`/topics/${topic.id}`)}
                             >
-                              {topic.description}
-                            </div>
-                            <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
-                              <Chip
-                                label={topic.module}
-                                size="small"
-                                color="primary"
+                              <AdminPanelSettings />
+                            </IconButton>
+                          </ListItem>
+                          {index < allTopics.length - 1 && <Divider />}
+                        </React.Fragment>
+                      ))
+                    )}
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* System Notifications */}
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      System Notifications
+                    </Typography>
+                    <Security color="primary" />
+                  </Box>
+                  <List>
+                    {notifications.length === 0 ? (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ p: 2 }}
+                      >
+                        No notifications yet.
+                      </Typography>
+                    ) : (
+                      notifications.map((notification, index) => (
+                        <React.Fragment key={notification.id}>
+                          <ListItem sx={{ px: 0 }}>
+                            <ListItemIcon>
+                              <Notifications
+                                color={
+                                  notification.isRead ? "disabled" : "primary"
+                                }
                               />
-                              <Chip
-                                label={`${topic.subscribers.length} subscribers`}
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={notification.title}
+                              secondary={
+                                <Box>
+                                  <div
+                                    style={{
+                                      fontSize: "0.875rem",
+                                      color: "inherit",
+                                      opacity: 0.7,
+                                    }}
+                                  >
+                                    {notification.message}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: "0.75rem",
+                                      color: "inherit",
+                                      opacity: 0.7,
+                                    }}
+                                  >
+                                    {new Date(
+                                      notification.createdAt
+                                    ).toLocaleDateString()}
+                                  </div>
+                                </Box>
+                              }
+                            />
+                            {notification.link && (
+                              <Button
                                 size="small"
                                 variant="outlined"
-                              />
-                              <Chip
-                                label={topic.isActive ? "Active" : "Inactive"}
-                                size="small"
-                                color={topic.isActive ? "success" : "default"}
-                              />
-                            </Box>
-                          </Box>
-                        }
-                      />
-                      <IconButton size="small">
-                        <AdminPanelSettings />
-                      </IconButton>
-                    </ListItem>
-                    {index < allTopics.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
+                                onClick={() => navigate(notification.link)}
+                              >
+                                View
+                              </Button>
+                            )}
+                          </ListItem>
+                          {index < notifications.length - 1 && <Divider />}
+                        </React.Fragment>
+                      ))
+                    )}
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
 
-        {/* System Notifications */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  System Notifications
-                </Typography>
-                <Security color="primary" />
-              </Box>
-              <List>
-                {notifications.map((notification, index) => (
-                  <React.Fragment key={notification.id}>
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemIcon>
-                        <Notifications
-                          color={notification.isRead ? "disabled" : "primary"}
-                        />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={notification.title}
-                        secondary={
-                          <Box>
-                            <div
-                              style={{
-                                fontSize: "0.875rem",
-                                color: "inherit",
-                                opacity: 0.7,
-                              }}
-                            >
-                              {notification.message}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "inherit",
-                                opacity: 0.7,
-                              }}
-                            >
-                              {notification.createdAt.toLocaleDateString()}
-                            </div>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                    {index < notifications.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Admin Actions */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                Admin Actions
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<People />}
-                    sx={{ py: 2 }}
-                  >
-                    Manage Users
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<Topic />}
-                    sx={{ py: 2 }}
-                  >
-                    Manage Topics
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<Security />}
-                    sx={{ py: 2 }}
-                  >
-                    Security Settings
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<Analytics />}
-                    sx={{ py: 2 }}
-                  >
-                    View Analytics
-                  </Button>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            {/* Admin Actions */}
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                    Admin Actions
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        startIcon={<People />}
+                        onClick={() => navigate("/admin/users")}
+                        sx={{ py: 2 }}
+                      >
+                        Manage Users
+                      </Button>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<Topic />}
+                        onClick={() => navigate("/topics")}
+                        sx={{ py: 2 }}
+                      >
+                        Manage Topics
+                      </Button>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<Security />}
+                        onClick={() => navigate("/admin/security")}
+                        sx={{ py: 2 }}
+                      >
+                        Security Settings
+                      </Button>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<Analytics />}
+                        onClick={() => navigate("/admin/analytics")}
+                        sx={{ py: 2 }}
+                      >
+                        View Analytics
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </>
+      )}
     </Box>
   );
 };
