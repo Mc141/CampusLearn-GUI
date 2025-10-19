@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { emailService, EmailPreferences } from "./emailService";
 
 export interface Notification {
   id: string;
@@ -43,11 +44,105 @@ class NotificationService {
         return null;
       }
 
-      return this.mapNotification(notification);
+      const mappedNotification = this.mapNotification(notification);
+      
+      // Send email notification if enabled
+      await this.sendEmailNotificationIfEnabled(data.userId, data.type, data.title, data.message, data.link);
+
+      return mappedNotification;
     } catch (error) {
       console.error("💥 Error creating notification:", error);
       return null;
     }
+  }
+
+  // Send email notification if user has email notifications enabled
+  private async sendEmailNotificationIfEnabled(
+    userId: string, 
+    type: Notification['type'], 
+    title: string, 
+    message: string, 
+    link?: string
+  ): Promise<void> {
+    try {
+      // Get user profile to check email preferences
+      const { data: userProfile, error } = await supabase
+        .from("users")
+        .select("email, first_name, last_name, email_notifications, notification_preferences")
+        .eq("id", userId)
+        .single();
+
+      if (error || !userProfile) {
+        console.log("📧 Could not fetch user profile for email notification:", error);
+        return;
+      }
+
+      // Check if email notifications are enabled
+      if (!userProfile.email_notifications) {
+        console.log("📧 Email notifications disabled for user:", userId);
+        return;
+      }
+
+      // Check specific notification type preference
+      const preferences = userProfile.notification_preferences as EmailPreferences['notification_preferences'] || {};
+      const notificationTypeKey = this.getNotificationTypeKey(type);
+      
+      if (notificationTypeKey && preferences[notificationTypeKey] === false) {
+        console.log("📧 Email notifications disabled for type:", type);
+        return;
+      }
+
+      // Send email notification
+      const recipientName = `${userProfile.first_name} ${userProfile.last_name}`.trim() || "User";
+      const fullLink = link ? `${window.location.origin}${link}` : window.location.origin;
+      
+      await emailService.sendEmailNotification({
+        to_email: userProfile.email,
+        to_name: recipientName,
+        notification_type: this.getEmailNotificationType(type),
+        notification_title: title,
+        notification_message: message,
+        notification_link: fullLink,
+        platform_name: 'CampusLearn'
+      });
+
+      console.log("📧 Email notification sent successfully to:", userProfile.email);
+    } catch (error) {
+      console.error("📧 Error sending email notification:", error);
+      // Don't throw error - email failure shouldn't break the notification system
+    }
+  }
+
+  // Map notification type to email notification type
+  private getEmailNotificationType(type: Notification['type']): string {
+    const typeMap: Record<Notification['type'], string> = {
+      'new_message': 'New Message',
+      'new_escalation': 'Tutor Escalation',
+      'forum_reply': 'Forum Reply',
+      'topic_reply': 'Topic Reply',
+      'new_topic': 'New Topic',
+      'new_answer': 'New Answer',
+      'new_resource': 'New Resource',
+      'tutor_assignment': 'Tutor Assignment',
+      'moderation_action': 'Moderation Action'
+    };
+    return typeMap[type] || 'Notification';
+  }
+
+  // Map notification type to preference key
+  private getNotificationTypeKey(type: Notification['type']): keyof EmailPreferences['notification_preferences'] | null {
+    const keyMap: Record<Notification['type'], keyof EmailPreferences['notification_preferences'] | null> = {
+      'new_message': 'new_messages',
+      'new_escalation': 'tutor_escalations',
+      'forum_reply': 'forum_replies',
+      'topic_reply': 'topic_replies',
+      'new_topic': 'new_topics',
+      'new_answer': 'new_answers',
+      'new_resource': null,
+      'tutor_assignment': null,
+      'moderation_action': null
+    };
+    return keyMap[type];
   }
 
   // Get notifications for a user

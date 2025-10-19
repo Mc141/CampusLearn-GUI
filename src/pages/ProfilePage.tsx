@@ -23,6 +23,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Switch,
+  FormControlLabel,
+  FormGroup,
 } from "@mui/material";
 import {
   Edit,
@@ -39,6 +42,8 @@ import {
   LocationOn,
   Business,
   Description,
+  Notifications,
+  NotificationsOff,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { mockModules } from "../data/mockData";
@@ -60,6 +65,16 @@ const ProfilePage: React.FC = () => {
     githubLocation: user?.githubLocation || "",
     githubWebsite: user?.githubWebsite || "",
     githubCompany: user?.githubCompany || "",
+    emailNotifications: user?.emailNotifications ?? true,
+    smsNotifications: user?.smsNotifications ?? false,
+    notificationPreferences: user?.notificationPreferences || {
+      new_messages: true,
+      tutor_escalations: true,
+      forum_replies: true,
+      topic_replies: true,
+      new_topics: true,
+      new_answers: true,
+    },
   });
   const [profilePicture, setProfilePicture] = useState<string | null>(
     user?.profilePicture || null
@@ -70,16 +85,23 @@ const ProfilePage: React.FC = () => {
     if (!user?.id) return;
 
     try {
+      console.log("💾 DEBUG: Saving profile with data:", {
+        userId: user.id,
+        emailNotifications: profileData.emailNotifications,
+        smsNotifications: profileData.smsNotifications,
+        notificationPreferences: profileData.notificationPreferences,
+      });
+
       await userProfileService.updateUserProfile(user.id, {
         ...profileData,
         profilePicture: profilePicture,
       });
-      console.log("Profile saved successfully");
+      console.log("✅ Profile saved successfully");
       // Refresh user profile to get updated data
       await refreshUserProfile();
       setIsEditing(false);
     } catch (error) {
-      console.error("Error saving profile:", error);
+      console.error("❌ Error saving profile:", error);
       // You could add a toast notification here
     }
   };
@@ -97,12 +119,23 @@ const ProfilePage: React.FC = () => {
       githubLocation: user?.githubLocation || "",
       githubWebsite: user?.githubWebsite || "",
       githubCompany: user?.githubCompany || "",
+      emailNotifications: user?.emailNotifications ?? true,
+      smsNotifications: user?.smsNotifications ?? false,
+      notificationPreferences: user?.notificationPreferences || {
+        new_messages: true,
+        tutor_escalations: true,
+        forum_replies: true,
+        topic_replies: true,
+        new_topics: true,
+        new_answers: true,
+      },
     });
     setProfilePicture(user?.profilePicture || null);
     setIsEditing(false);
   };
 
   const handleInputChange = (field: string, value: any) => {
+    console.log("🔄 DEBUG: Profile field changed:", { field, value });
     setProfileData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -463,6 +496,69 @@ const ProfilePage: React.FC = () => {
                       ),
                     }}
                   />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+          {/* Notification Preferences */}
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  mb: 3,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
+                <Notifications />
+                Notification Preferences
+              </Typography>
+
+              <Grid container spacing={3}>
+                {/* Global Email/SMS Settings */}
+                <Grid item xs={12}>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ fontWeight: 500, mb: 2 }}
+                  >
+                    Global Settings
+                  </Typography>
+                  <FormGroup>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={profileData.emailNotifications}
+                          onChange={(e) =>
+                            handleInputChange(
+                              "emailNotifications",
+                              e.target.checked
+                            )
+                          }
+                          disabled={!isEditing}
+                        />
+                      }
+                      label="Email Notifications"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={profileData.smsNotifications}
+                          onChange={(e) =>
+                            handleInputChange(
+                              "smsNotifications",
+                              e.target.checked
+                            )
+                          }
+                          disabled={!isEditing}
+                        />
+                      }
+                      label="SMS Notifications"
+                    />
+                  </FormGroup>
                 </Grid>
               </Grid>
             </CardContent>

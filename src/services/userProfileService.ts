@@ -13,12 +13,27 @@ export interface UpdateUserProfileData {
   githubLocation?: string;
   githubWebsite?: string;
   githubCompany?: string;
+  emailNotifications?: boolean;
+  smsNotifications?: boolean;
+  notificationPreferences?: {
+    new_messages: boolean;
+    tutor_escalations: boolean;
+    forum_replies: boolean;
+    topic_replies: boolean;
+    new_topics: boolean;
+    new_answers: boolean;
+  };
 }
 
 export const userProfileService = {
   // Update user profile
   async updateUserProfile(userId: string, profileData: UpdateUserProfileData): Promise<User> {
     try {
+      console.log("💾 DEBUG: userProfileService.updateUserProfile called with:", {
+        userId,
+        profileData
+      });
+
       // Build update object with only provided fields
       const updateData: any = {
         updated_at: new Date().toISOString()
@@ -36,6 +51,11 @@ export const userProfileService = {
       if (profileData.githubLocation !== undefined) updateData.github_location = profileData.githubLocation;
       if (profileData.githubWebsite !== undefined) updateData.github_website = profileData.githubWebsite;
       if (profileData.githubCompany !== undefined) updateData.github_company = profileData.githubCompany;
+      if (profileData.emailNotifications !== undefined) updateData.email_notifications = profileData.emailNotifications;
+      if (profileData.smsNotifications !== undefined) updateData.sms_notifications = profileData.smsNotifications;
+      if (profileData.notificationPreferences !== undefined) updateData.notification_preferences = profileData.notificationPreferences;
+
+      console.log("💾 DEBUG: Update data being sent to database:", updateData);
 
       const { data, error } = await supabase
         .from('users')
@@ -45,10 +65,11 @@ export const userProfileService = {
         .single();
 
       if (error) {
-        console.error('Error updating user profile:', error);
+        console.error('❌ Error updating user profile:', error);
         throw error;
       }
 
+      console.log("✅ DEBUG: Database update successful, returned data:", data);
       return this.mapUserData(data);
     } catch (error) {
       console.error('Error in updateUserProfile:', error);
@@ -104,6 +125,12 @@ export const userProfileService = {
 
   // Helper function to map database user data to User interface
   mapUserData(data: any): User {
+    console.log("🔄 DEBUG: Mapping user data from database:", {
+      emailNotifications: data.email_notifications,
+      smsNotifications: data.sms_notifications,
+      notificationPreferences: data.notification_preferences
+    });
+
     return {
       id: data.id,
       email: data.email,
@@ -119,6 +146,16 @@ export const userProfileService = {
       githubLocation: data.github_location || undefined,
       githubWebsite: data.github_website || undefined,
       githubCompany: data.github_company || undefined,
+      emailNotifications: data.email_notifications ?? true,
+      smsNotifications: data.sms_notifications ?? false,
+      notificationPreferences: data.notification_preferences || {
+        new_messages: true,
+        tutor_escalations: true,
+        forum_replies: true,
+        topic_replies: true,
+        new_topics: true,
+        new_answers: true,
+      },
       createdAt: new Date(data.created_at),
       lastLogin: data.last_login ? new Date(data.last_login) : undefined
     };

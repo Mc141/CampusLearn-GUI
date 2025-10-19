@@ -13,6 +13,16 @@ export interface User {
   githubLocation?: string;
   githubWebsite?: string;
   githubCompany?: string;
+  emailNotifications?: boolean;
+  smsNotifications?: boolean;
+  notificationPreferences?: {
+    new_messages: boolean;
+    tutor_escalations: boolean;
+    forum_replies: boolean;
+    topic_replies: boolean;
+    new_topics: boolean;
+    new_answers: boolean;
+  };
   createdAt: Date;
   lastLogin?: Date;
 }

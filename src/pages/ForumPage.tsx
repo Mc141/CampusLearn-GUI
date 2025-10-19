@@ -257,26 +257,26 @@ const ForumPage: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           mb: 3,
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: 600 }}>
           Public Forum
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
+            </Typography>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
           onClick={() => setCreatePostDialogOpen(true)}
           sx={{ borderRadius: 2 }}
-        >
-          New Post
-        </Button>
-      </Box>
+          >
+            New Post
+          </Button>
+        </Box>
 
       {/* Error Alert */}
       {error && (
@@ -321,7 +321,7 @@ const ForumPage: React.FC = () => {
               >
                 {sortOptions.find((opt) => opt.value === sortBy)?.label}
               </Button>
-            </Box>
+                            </Box>
           </Paper>
 
           {/* Sort Menu */}
@@ -346,22 +346,22 @@ const ForumPage: React.FC = () => {
           {loading ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
               <CircularProgress />
-            </Box>
+                              </Box>
           ) : posts.length === 0 ? (
             <Card>
               <CardContent sx={{ textAlign: "center", py: 4 }}>
                 <Typography variant="h6" color="text.secondary">
                   No posts found
                 </Typography>
-                <Typography
+                                <Typography
                   variant="body2"
-                  color="text.secondary"
+                                  color="text.secondary"
                   sx={{ mt: 1 }}
-                >
+                                >
                   {searchQuery
                     ? "Try adjusting your search terms"
                     : "Be the first to start a discussion!"}
-                </Typography>
+                                </Typography>
               </CardContent>
             </Card>
           ) : (
@@ -372,39 +372,39 @@ const ForumPage: React.FC = () => {
                 onClick={() => navigate(`/forum/post/${post.id}`)}
               >
                 <CardContent>
-                  <Box
-                    sx={{
-                      display: "flex",
+                                <Box
+                                  sx={{
+                                    display: "flex",
                       justifyContent: "space-between",
                       alignItems: "flex-start",
                       mb: 2,
-                    }}
-                  >
+                                  }}
+                                >
                     <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
                       {post.title}
                     </Typography>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Tooltip title="Upvote">
-                        <IconButton
-                          size="small"
+                                  <IconButton
+                                    size="small"
                           onClick={(e) => {
                             e.stopPropagation();
                             upvotePost(post.id);
                           }}
-                        >
-                          <ThumbUp fontSize="small" />
-                        </IconButton>
+                                  >
+                                    <ThumbUp fontSize="small" />
+                                  </IconButton>
                       </Tooltip>
                       <Typography variant="body2" color="text.secondary">
-                        {post.upvotes}
-                      </Typography>
-                    </Box>
+                                    {post.upvotes}
+                                  </Typography>
+                                </Box>
                   </Box>
 
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{
+                                  sx={{
                       mb: 2,
                       display: "-webkit-box",
                       WebkitLineClamp: 3,
@@ -413,13 +413,13 @@ const ForumPage: React.FC = () => {
                     }}
                   >
                     {post.content}
-                  </Typography>
+                                  </Typography>
 
-                  <Box
-                    sx={{
-                      display: "flex",
+                            <Box
+                              sx={{
+                                display: "flex",
                       justifyContent: "space-between",
-                      alignItems: "center",
+                                alignItems: "center",
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -443,7 +443,7 @@ const ForumPage: React.FC = () => {
                           addSuffix: true,
                         })}
                       </Typography>
-                    </Box>
+                            </Box>
 
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Box
@@ -457,15 +457,15 @@ const ForumPage: React.FC = () => {
                       {post.tags.length > 0 && (
                         <Box sx={{ display: "flex", gap: 0.5 }}>
                           {post.tags.slice(0, 2).map((tag) => (
-                            <Chip
-                              key={tag}
-                              label={tag}
-                              size="small"
-                              variant="outlined"
+                                  <Chip
+                                    key={tag}
+                                    label={tag}
+                                    size="small"
+                                    variant="outlined"
                               icon={<Tag />}
                               onClick={(e) => e.stopPropagation()}
-                            />
-                          ))}
+                                  />
+                                ))}
                           {post.tags.length > 2 && (
                             <Chip
                               label={`+${post.tags.length - 2}`}
@@ -476,8 +476,8 @@ const ForumPage: React.FC = () => {
                           )}
                         </Box>
                       )}
-                    </Box>
-                  </Box>
+                              </Box>
+                            </Box>
                 </CardContent>
               </Card>
             ))
@@ -491,12 +491,12 @@ const ForumPage: React.FC = () => {
             <CardContent>
               <Typography
                 variant="h6"
-                sx={{
+                                sx={{
                   fontWeight: 600,
                   mb: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
                 }}
               >
                 <TrendingUp color="primary" />
@@ -516,35 +516,35 @@ const ForumPage: React.FC = () => {
                       "&:hover": { backgroundColor: "action.hover" },
                       borderRadius: 1,
                       px: 1,
-                      mb: 1,
-                    }}
+                                  mb: 1,
+                                }}
                     onClick={() => navigate(`/forum/post/${post.id}`)}
-                  >
-                    <Typography
+                              >
+                                <Typography
                       variant="body2"
                       sx={{ fontWeight: 500, mb: 0.5 }}
-                    >
-                      {post.title}
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: "flex",
+                                >
+                                  {post.title}
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
                       }}
                     >
                       <Typography variant="caption" color="text.secondary">
                         {post.authorName}
-                      </Typography>
+              </Typography>
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
                       >
                         <ThumbUp fontSize="small" color="action" />
                         <Typography variant="caption" color="text.secondary">
                           {post.upvotes}
-                        </Typography>
-                      </Box>
-                    </Box>
+                  </Typography>
+                </Box>
+              </Box>
                   </Box>
                 ))
               )}
