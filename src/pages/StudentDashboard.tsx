@@ -443,7 +443,7 @@ const StudentDashboard: React.FC = () => {
                                     />
                                     <Chip
                                       label={`${
-                                        topic.subscriber_count || 0
+                                        topic.subscriberCount || 0
                                       } subscribers`}
                                       size="small"
                                       variant="outlined"

@@ -254,9 +254,9 @@ const AdminDashboard: React.FC = () => {
                       variant="outlined"
                       size="small"
                       startIcon={<Add />}
-                      onClick={() => navigate("/admin/users")}
+                      onClick={() => navigate("/admin/escalations")}
                     >
-                      Manage Users
+                      Manage Escalations
                     </Button>
                   </Box>
                   <TableContainer>
@@ -322,9 +322,7 @@ const AdminDashboard: React.FC = () => {
                               <TableCell>
                                 <IconButton
                                   size="small"
-                                  onClick={() =>
-                                    navigate(`/admin/users/${user.id}`)
-                                  }
+                                  onClick={() => navigate("/admin/escalations")}
                                 >
                                   <AdminPanelSettings />
                                 </IconButton>
@@ -467,7 +465,7 @@ const AdminDashboard: React.FC = () => {
                                     />
                                     <Chip
                                       label={`${
-                                        topic.subscriber_count || 0
+                                        topic.subscriberCount || 0
                                       } subscribers`}
                                       size="small"
                                       variant="outlined"
@@ -597,10 +595,10 @@ const AdminDashboard: React.FC = () => {
                         fullWidth
                         variant="contained"
                         startIcon={<People />}
-                        onClick={() => navigate("/admin/users")}
+                        onClick={() => navigate("/admin/escalations")}
                         sx={{ py: 2 }}
                       >
-                        Manage Users
+                        Manage Escalations
                       </Button>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
@@ -619,10 +617,10 @@ const AdminDashboard: React.FC = () => {
                         fullWidth
                         variant="outlined"
                         startIcon={<Security />}
-                        onClick={() => navigate("/admin/security")}
+                        onClick={() => navigate("/forum/moderation")}
                         sx={{ py: 2 }}
                       >
-                        Security Settings
+                        Forum Moderation
                       </Button>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
@@ -630,10 +628,10 @@ const AdminDashboard: React.FC = () => {
                         fullWidth
                         variant="outlined"
                         startIcon={<Analytics />}
-                        onClick={() => navigate("/admin/analytics")}
+                        onClick={() => navigate("/notifications")}
                         sx={{ py: 2 }}
                       >
-                        View Analytics
+                        Notifications
                       </Button>
                     </Grid>
                   </Grid>
