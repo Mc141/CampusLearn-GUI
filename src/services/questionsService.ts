@@ -29,6 +29,7 @@ export interface QuestionWithDetails extends Question {
     createdAt: Date;
   }>;
   answerCount: number;
+  isModerated?: boolean;
 }
 
 export const questionsService = {
@@ -388,9 +389,106 @@ export const questionsService = {
           createdAt: new Date(answer.created_at),
         })),
         answerCount: question.answers.length,
+        isModerated: question.is_moderated || false,
       }));
     } catch (error) {
       console.error('Error in getAllQuestions:', error);
+      throw error;
+    }
+  },
+
+  // Moderate a question (hide/show)
+  async moderateQuestion(questionId: string, isModerated: boolean = true): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('questions')
+        .update({ is_moderated: isModerated })
+        .eq('id', questionId);
+
+      if (error) {
+        console.error('Error moderating question:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error in moderateQuestion:', error);
+      throw error;
+    }
+  },
+
+  // Get all questions for moderation (including moderated ones)
+  async getAllQuestionsForModeration(): Promise<QuestionWithDetails[]> {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .select(`
+          *,
+          student:users!questions_student_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          answers:answers(
+            id,
+            content,
+            tutor:users!answers_tutor_id_fkey(
+              id,
+              first_name,
+              last_name,
+              email
+            ),
+            is_accepted,
+            upvotes,
+            created_at
+          ),
+          topic:topics(
+            id,
+            title,
+            module_code
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching questions for moderation:', error);
+        throw error;
+      }
+
+      return data.map(question => ({
+        id: question.id,
+        title: question.title,
+        content: question.content,
+        isAnonymous: question.is_anonymous,
+        tags: question.tags || [],
+        status: question.status,
+        topicId: question.topic_id,
+        studentId: question.student_id,
+        createdAt: new Date(question.created_at),
+        updatedAt: question.updated_at ? new Date(question.updated_at) : new Date(question.created_at),
+        student: {
+          id: question.student.id,
+          firstName: question.student.first_name,
+          lastName: question.student.last_name,
+          email: question.student.email,
+        },
+        answers: question.answers.map(answer => ({
+          id: answer.id,
+          content: answer.content,
+          tutor: {
+            id: answer.tutor.id,
+            firstName: answer.tutor.first_name,
+            lastName: answer.tutor.last_name,
+            email: answer.tutor.email,
+          },
+          isAccepted: answer.is_accepted,
+          upvotes: answer.upvotes,
+          createdAt: new Date(answer.created_at),
+        })),
+        answerCount: question.answers.length,
+        isModerated: question.is_moderated || false,
+      }));
+    } catch (error) {
+      console.error('Error in getAllQuestionsForModeration:', error);
       throw error;
     }
   },

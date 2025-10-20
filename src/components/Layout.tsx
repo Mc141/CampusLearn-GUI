@@ -41,6 +41,7 @@ import {
   People,
   PersonAdd,
   AdminPanelSettings,
+  QuestionAnswer,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -129,32 +130,38 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
 
     if (user?.role === "admin") {
+      // Add admin items in logical order
       baseItems.splice(1, 0, {
-        text: "Forum Moderation",
-        icon: <AdminPanelSettings />,
-        path: "/forum/moderation",
-      });
-      baseItems.splice(2, 0, {
-        text: "Tutor Applications",
-        icon: <PersonAdd />,
-        path: "/tutor-applications",
-      });
-      baseItems.splice(3, 0, {
-        text: "Tutor Module Assignment",
-        icon: <Assignment />,
-        path: "/tutor-module-assignment",
-      });
-      baseItems.splice(3, 0, {
         text: "Admin Panel",
         icon: <School />,
         path: "/admin/users",
       });
-      baseItems.push({
+      baseItems.splice(2, 0, {
+        text: "Topic Management",
+        icon: <Topic />,
+        path: "/admin/topics",
+      });
+      baseItems.splice(3, 0, {
+        text: "Forum Moderation",
+        icon: <AdminPanelSettings />,
+        path: "/forum/moderation",
+      });
+      baseItems.splice(4, 0, {
+        text: "Tutor Applications",
+        icon: <PersonAdd />,
+        path: "/tutor-applications",
+      });
+      baseItems.splice(5, 0, {
+        text: "Tutor Module Assignment",
+        icon: <Assignment />,
+        path: "/tutor-module-assignment",
+      });
+      baseItems.splice(6, 0, {
         text: "Escalation Management",
         icon: <Assignment />,
         path: "/admin/escalations",
       });
-      baseItems.push({
+      baseItems.splice(7, 0, {
         text: "Notifications",
         icon: <Settings />,
         path: "/notifications",

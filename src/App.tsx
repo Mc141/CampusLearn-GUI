@@ -31,6 +31,7 @@ import TutorEscalationDashboard from "./pages/TutorEscalationDashboard";
 import AdminUserManagementPage from "./pages/AdminUserManagementPage";
 import FAQPage from "./pages/FAQPage";
 import AdminEscalationManagement from "./pages/AdminEscalationManagement";
+import TopicManagementPage from "./pages/TopicManagementPage";
 
 const App: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -149,6 +150,16 @@ const App: React.FC = () => {
             element={
               user?.role === "admin" ? (
                 <AdminUserManagementPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/admin/topics"
+            element={
+              user?.role === "admin" ? (
+                <TopicManagementPage />
               ) : (
                 <Navigate to="/" replace />
               )

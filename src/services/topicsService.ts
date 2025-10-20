@@ -23,6 +23,7 @@ export interface TopicWithDetails extends Omit<Topic, 'module'> {
   };
   subscriberCount: number;
   tutorCount: number;
+  isModerated?: boolean;
 }
 
 export const topicsService = {
@@ -393,6 +394,94 @@ export const topicsService = {
       }
     } catch (error) {
       console.error('Error in deleteTopic:', error);
+      throw error;
+    }
+  },
+
+  // Moderate a topic (hide/show)
+  async moderateTopic(topicId: string, isModerated: boolean = true): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('topics')
+        .update({ is_moderated: isModerated })
+        .eq('id', topicId);
+
+      if (error) {
+        console.error('Error moderating topic:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error in moderateTopic:', error);
+      throw error;
+    }
+  },
+
+  // Get all topics for moderation (including moderated ones)
+  async getAllTopicsForModeration(): Promise<TopicWithDetails[]> {
+    try {
+      const { data, error } = await supabase
+        .from('topics')
+        .select(`
+          *,
+          created_by_user:users!topics_created_by_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          subscriptions:topic_subscriptions(count),
+          tutors:topic_tutors(count)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching topics for moderation:', error);
+        throw error;
+      }
+
+      // Get modules separately to match with module_code
+      const { data: modulesData } = await supabase
+        .from('modules')
+        .select('*');
+
+      const modulesMap = new Map(modulesData?.map(m => [m.code, m]) || []);
+
+      return data.map(topic => {
+        const module = modulesMap.get(topic.module_code);
+        return {
+          id: topic.id,
+          title: topic.title,
+          description: topic.description,
+          moduleCode: topic.module_code,
+          createdBy: topic.created_by,
+          createdAt: new Date(topic.created_at),
+          subscribers: [],
+          tutors: [],
+          isActive: topic.is_active,
+          isModerated: topic.is_moderated || false,
+          createdByUser: {
+            id: topic.created_by_user.id,
+            firstName: topic.created_by_user.first_name,
+            lastName: topic.created_by_user.last_name,
+            email: topic.created_by_user.email,
+          },
+          moduleDetails: module ? {
+            id: module.id,
+            name: module.name,
+            code: module.code,
+            level: module.level,
+          } : {
+            id: '',
+            name: topic.module_code,
+            code: topic.module_code,
+            level: 'Unknown',
+          },
+          subscriberCount: topic.subscriptions?.[0]?.count || 0,
+          tutorCount: topic.tutors?.[0]?.count || 0,
+        };
+      });
+    } catch (error) {
+      console.error('Error in getAllTopicsForModeration:', error);
       throw error;
     }
   },

@@ -13,6 +13,7 @@ export interface AnswerWithDetails extends Answer {
     lastName: string;
     email: string;
   };
+  isModerated?: boolean;
 }
 
 export const answersService = {
@@ -242,6 +243,79 @@ export const answersService = {
       }
     } catch (error) {
       console.error('Error in deleteAnswer:', error);
+      throw error;
+    }
+  },
+
+  // Moderate an answer (hide/show)
+  async moderateAnswer(answerId: string, isModerated: boolean = true): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('answers')
+        .update({ is_moderated: isModerated })
+        .eq('id', answerId);
+
+      if (error) {
+        console.error('Error moderating answer:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error in moderateAnswer:', error);
+      throw error;
+    }
+  },
+
+  // Get all answers for moderation (including moderated ones)
+  async getAllAnswersForModeration(): Promise<AnswerWithDetails[]> {
+    try {
+      const { data, error } = await supabase
+        .from('answers')
+        .select(`
+          *,
+          tutor:users!answers_tutor_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          question:questions(
+            id,
+            title,
+            topic_id,
+            topic:topics(
+              id,
+              title,
+              module_code
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching answers for moderation:', error);
+        throw error;
+      }
+
+      return data.map(answer => ({
+        id: answer.id,
+        questionId: answer.question_id,
+        tutorId: answer.tutor_id,
+        content: answer.content,
+        isAccepted: answer.is_accepted,
+        upvotes: answer.upvotes,
+        createdAt: new Date(answer.created_at),
+        updatedAt: new Date(answer.updated_at),
+        tutor: {
+          id: answer.tutor.id,
+          firstName: answer.tutor.first_name,
+          lastName: answer.tutor.last_name,
+          email: answer.tutor.email,
+        },
+        replies: [],
+        isModerated: answer.is_moderated || false,
+      }));
+    } catch (error) {
+      console.error('Error in getAllAnswersForModeration:', error);
       throw error;
     }
   },

@@ -606,10 +606,10 @@ const AdminDashboard: React.FC = () => {
                         fullWidth
                         variant="outlined"
                         startIcon={<Topic />}
-                        onClick={() => navigate("/topics")}
+                        onClick={() => navigate("/admin/topics")}
                         sx={{ py: 2 }}
                       >
-                        Manage Topics
+                        Topic Management
                       </Button>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>

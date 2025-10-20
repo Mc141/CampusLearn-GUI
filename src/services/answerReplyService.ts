@@ -10,6 +10,7 @@ export interface CreateAnswerReplyData {
 
 export interface AnswerReplyWithAuthor extends AnswerReply {
   authorName?: string;
+  isModerated?: boolean;
 }
 
 export const answerReplyService = {
@@ -215,6 +216,55 @@ export const answerReplyService = {
       }
     } catch (error) {
       console.error('Error in moderateReply:', error);
+      throw error;
+    }
+  },
+
+  // Get all answer replies for moderation (including moderated ones)
+  async getAllAnswerRepliesForModeration(): Promise<AnswerReplyWithAuthor[]> {
+    try {
+      const { data, error } = await supabase
+        .from('answer_replies')
+        .select(`
+          *,
+          author:users(first_name, last_name),
+          answer:answers(
+            id,
+            content,
+            question:questions(
+              id,
+              title,
+              topic:topics(
+                id,
+                title,
+                module_code
+              )
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching answer replies for moderation:', error);
+        throw error;
+      }
+
+      return (data || []).map(reply => ({
+        id: reply.id,
+        answerId: reply.answer_id,
+        content: reply.content,
+        authorId: reply.author_id,
+        isAnonymous: reply.is_anonymous,
+        upvotes: reply.upvotes || 0,
+        isModerated: reply.is_moderated || false,
+        createdAt: new Date(reply.created_at),
+        updatedAt: new Date(reply.updated_at),
+        authorName: reply.author ? 
+          `${reply.author.first_name} ${reply.author.last_name}` : 
+          'Anonymous'
+      }));
+    } catch (error) {
+      console.error('Error in getAllAnswerRepliesForModeration:', error);
       throw error;
     }
   }
