@@ -246,7 +246,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           }
         } else if (existingUser) {
-          // User exists, create profile from database data
+          // Check if user is banned
+          if (!existingUser.is_active) {
+            console.log("User is banned, signing out...");
+            await supabase.auth.signOut();
+            setUser(null);
+            setIsLoading(false);
+            // Store ban message for display
+            sessionStorage.setItem(
+              "banMessage",
+              "Your account has been suspended. Please contact an administrator for assistance."
+            );
+            return;
+          }
+
+          // User exists and is active, create profile from database data
           const userProfile: User = {
             id: existingUser.id,
             email: existingUser.email,
@@ -314,6 +328,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return { success: false, error: "Invalid email or password." };
         } else {
           return { success: false, error: error.message };
+        }
+      }
+
+      // Check if user is banned before allowing login
+      if (data.user) {
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("is_active")
+          .eq("id", data.user.id)
+          .single();
+
+        if (!userError && userData && !userData.is_active) {
+          // User is banned, sign them out immediately
+          await supabase.auth.signOut();
+          return {
+            success: false,
+            error:
+              "Your account has been suspended. Please contact an administrator for assistance.",
+          };
         }
       }
 

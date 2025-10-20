@@ -27,7 +27,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check for success message from registration
+  // Check for success message from registration and ban messages
   React.useEffect(() => {
     if (location.state?.message) {
       setSuccessMessage(location.state.message);
@@ -43,6 +43,13 @@ const LoginPage: React.FC = () => {
       }, 10000);
 
       return () => clearTimeout(timer);
+    }
+
+    // Check for ban message from sessionStorage
+    const banMessage = sessionStorage.getItem("banMessage");
+    if (banMessage) {
+      setError(banMessage);
+      sessionStorage.removeItem("banMessage"); // Clear after displaying
     }
   }, [location.state]);
 

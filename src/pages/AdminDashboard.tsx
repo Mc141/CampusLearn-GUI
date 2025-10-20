@@ -254,9 +254,9 @@ const AdminDashboard: React.FC = () => {
                       variant="outlined"
                       size="small"
                       startIcon={<Add />}
-                      onClick={() => navigate("/admin/escalations")}
+                      onClick={() => navigate("/admin/users")}
                     >
-                      Manage Escalations
+                      Manage Users
                     </Button>
                   </Box>
                   <TableContainer>

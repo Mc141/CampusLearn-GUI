@@ -28,7 +28,7 @@ const RegisterPage: React.FC = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "student" as "student" | "tutor",
+    role: "student" as "student",
     studentNumber: "",
     modules: [] as string[],
   });
@@ -174,20 +174,11 @@ const RegisterPage: React.FC = () => {
                   required
                 />
               </Grid>
+              {/* Role selection removed; default to student */}
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Role</InputLabel>
-                  <Select
-                    value={formData.role}
-                    label="Role"
-                    onChange={(e) => handleInputChange("role", e.target.value)}
-                  >
-                    <MenuItem value="student">Student</MenuItem>
-                    <MenuItem value="tutor">Tutor</MenuItem>
-                  </Select>
-                </FormControl>
+                <TextField fullWidth label="Role" value="Student" disabled />
               </Grid>
-              {formData.role === "student" && (
+              {true && (
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth

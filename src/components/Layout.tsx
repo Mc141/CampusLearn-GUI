@@ -147,7 +147,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       baseItems.splice(3, 0, {
         text: "Admin Panel",
         icon: <School />,
-        path: "/admin",
+        path: "/admin/users",
       });
       baseItems.push({
         text: "Escalation Management",
