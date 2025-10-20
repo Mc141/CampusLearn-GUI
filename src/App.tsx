@@ -28,7 +28,7 @@ import TutorModuleAssignmentPage from "./pages/TutorModuleAssignmentPage";
 import PostDetailsPage from "./pages/PostDetailsPage";
 import ForumModerationPage from "./pages/ForumModerationPage";
 import TutorEscalationDashboard from "./pages/TutorEscalationDashboard";
-import AdminEscalationManagement from "./pages/AdminEscalationManagement";
+import FAQPage from "./pages/FAQPage";
 
 const App: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -100,7 +100,17 @@ const App: React.FC = () => {
             path="/notifications"
             element={<NotificationManagementPage />}
           />
-          <Route path="/faq" element={<FAQManagementPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route
+            path="/faq-management"
+            element={
+              user?.role === "admin" || user?.role === "tutor" ? (
+                <FAQManagementPage />
+              ) : (
+                <Navigate to="/faq" replace />
+              )
+            }
+          />
           <Route path="/trending" element={<TrendingTopicsPage />} />
           <Route path="/tutor-matching" element={<TutorMatchingPage />} />
           <Route path="/tutor-application" element={<TutorApplicationPage />} />
