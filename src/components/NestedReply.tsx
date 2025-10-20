@@ -60,12 +60,14 @@ const NestedReply: React.FC<NestedReplyProps> = ({
 
   const canReply = reply.depth < maxDepth;
 
-  const handleUpvote = async () => {
+  const handleToggleVote = async () => {
+    if (!user?.id) return;
+
     try {
-      await forumService.upvoteReply(reply.id);
+      const result = await forumService.toggleReplyVote(reply.id, user.id);
       onReplyAdded(); // Refresh to show updated upvotes
     } catch (error) {
-      console.error("Error upvoting reply:", error);
+      console.error("Error toggling reply vote:", error);
     }
   };
 
@@ -184,7 +186,7 @@ const NestedReply: React.FC<NestedReplyProps> = ({
 
         {/* Reply Actions */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconButton size="small" onClick={handleUpvote}>
+          <IconButton size="small" onClick={handleToggleVote}>
             <ThumbUp fontSize="small" />
           </IconButton>
           <Typography variant="caption" color="text.secondary">

@@ -336,38 +336,100 @@ export const forumService = {
     }
   },
 
-  // Upvote a forum post
-  async upvotePost(postId: string): Promise<void> {
+  // Toggle vote for a forum post (like/unlike)
+  async togglePostVote(postId: string, userId: string): Promise<{ voteCount: number; hasVoted: boolean }> {
     try {
-      const { error } = await supabase.rpc('increment_upvotes', {
-        table_name: 'forum_posts',
-        row_id: postId
+      const { data, error } = await supabase.rpc('toggle_vote', {
+        p_table_name: 'forum_posts',
+        p_entity_id: postId,
+        p_user_id: userId,
+        p_vote_type: 'upvote'
       });
 
       if (error) {
-        console.error('Error upvoting post:', error);
+        console.error('Error toggling post vote:', error);
         throw error;
       }
+
+      return {
+        voteCount: data.vote_count,
+        hasVoted: data.has_voted
+      };
     } catch (error) {
-      console.error('Error in upvotePost:', error);
+      console.error('Error in togglePostVote:', error);
       throw error;
     }
   },
 
-  // Upvote a forum reply
-  async upvoteReply(replyId: string): Promise<void> {
+  // Toggle vote for a forum reply (like/unlike)
+  async toggleReplyVote(replyId: string, userId: string): Promise<{ voteCount: number; hasVoted: boolean }> {
     try {
-      const { error } = await supabase.rpc('increment_upvotes', {
-        table_name: 'forum_replies',
-        row_id: replyId
+      const { data, error } = await supabase.rpc('toggle_vote', {
+        p_table_name: 'forum_replies',
+        p_entity_id: replyId,
+        p_user_id: userId,
+        p_vote_type: 'upvote'
       });
 
       if (error) {
-        console.error('Error upvoting reply:', error);
+        console.error('Error toggling reply vote:', error);
         throw error;
       }
+
+      return {
+        voteCount: data.vote_count,
+        hasVoted: data.has_voted
+      };
     } catch (error) {
-      console.error('Error in upvoteReply:', error);
+      console.error('Error in toggleReplyVote:', error);
+      throw error;
+    }
+  },
+
+  // Get vote info for a forum post
+  async getPostVoteInfo(postId: string, userId: string): Promise<{ voteCount: number; hasVoted: boolean }> {
+    try {
+      const { data, error } = await supabase.rpc('get_vote_info', {
+        p_table_name: 'forum_posts',
+        p_entity_id: postId,
+        p_user_id: userId
+      });
+
+      if (error) {
+        console.error('Error getting post vote info:', error);
+        throw error;
+      }
+
+      return {
+        voteCount: data.vote_count,
+        hasVoted: data.has_voted
+      };
+    } catch (error) {
+      console.error('Error in getPostVoteInfo:', error);
+      throw error;
+    }
+  },
+
+  // Get vote info for a forum reply
+  async getReplyVoteInfo(replyId: string, userId: string): Promise<{ voteCount: number; hasVoted: boolean }> {
+    try {
+      const { data, error } = await supabase.rpc('get_vote_info', {
+        p_table_name: 'forum_replies',
+        p_entity_id: replyId,
+        p_user_id: userId
+      });
+
+      if (error) {
+        console.error('Error getting reply vote info:', error);
+        throw error;
+      }
+
+      return {
+        voteCount: data.vote_count,
+        hasVoted: data.has_voted
+      };
+    } catch (error) {
+      console.error('Error in getReplyVoteInfo:', error);
       throw error;
     }
   },

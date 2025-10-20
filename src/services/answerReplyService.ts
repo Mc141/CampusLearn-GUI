@@ -134,20 +134,51 @@ export const answerReplyService = {
     }
   },
 
-  // Upvote an answer reply
-  async upvoteReply(replyId: string): Promise<void> {
+  // Toggle vote for an answer reply (like/unlike)
+  async toggleReplyVote(replyId: string, userId: string): Promise<{ voteCount: number; hasVoted: boolean }> {
     try {
-      const { error } = await supabase.rpc('increment_upvotes', {
-        table_name: 'answer_replies',
-        row_id: replyId
+      const { data, error } = await supabase.rpc('toggle_vote', {
+        p_table_name: 'answer_replies',
+        p_entity_id: replyId,
+        p_user_id: userId,
+        p_vote_type: 'upvote'
       });
 
       if (error) {
-        console.error('Error upvoting answer reply:', error);
+        console.error('Error toggling answer reply vote:', error);
         throw error;
       }
+
+      return {
+        voteCount: data.vote_count,
+        hasVoted: data.has_voted
+      };
     } catch (error) {
-      console.error('Error in upvoteReply:', error);
+      console.error('Error in toggleReplyVote:', error);
+      throw error;
+    }
+  },
+
+  // Get vote info for an answer reply
+  async getReplyVoteInfo(replyId: string, userId: string): Promise<{ voteCount: number; hasVoted: boolean }> {
+    try {
+      const { data, error } = await supabase.rpc('get_vote_info', {
+        p_table_name: 'answer_replies',
+        p_entity_id: replyId,
+        p_user_id: userId
+      });
+
+      if (error) {
+        console.error('Error getting answer reply vote info:', error);
+        throw error;
+      }
+
+      return {
+        voteCount: data.vote_count,
+        hasVoted: data.has_voted
+      };
+    } catch (error) {
+      console.error('Error in getReplyVoteInfo:', error);
       throw error;
     }
   },

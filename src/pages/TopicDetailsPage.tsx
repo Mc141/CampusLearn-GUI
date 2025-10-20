@@ -385,9 +385,14 @@ const TopicDetailsPage: React.FC = () => {
     }
   };
 
-  const handleUpvoteQuestion = async (questionId: string) => {
+  const handleToggleQuestionVote = async (questionId: string) => {
+    if (!user?.id) return;
+
     try {
-      await questionsService.upvoteQuestion(questionId);
+      const result = await questionsService.toggleQuestionVote(
+        questionId,
+        user.id
+      );
 
       // Refresh questions list
       const updatedQuestions = await questionsService.getQuestionsByTopic(
@@ -395,13 +400,15 @@ const TopicDetailsPage: React.FC = () => {
       );
       setQuestions(updatedQuestions);
     } catch (err) {
-      console.error("Error upvoting question:", err);
+      console.error("Error toggling question vote:", err);
     }
   };
 
-  const handleUpvoteAnswer = async (answerId: string) => {
+  const handleToggleAnswerVote = async (answerId: string) => {
+    if (!user?.id) return;
+
     try {
-      await answersService.upvoteAnswer(answerId);
+      const result = await answersService.toggleAnswerVote(answerId, user.id);
 
       // Refresh questions list
       const updatedQuestions = await questionsService.getQuestionsByTopic(
@@ -409,7 +416,7 @@ const TopicDetailsPage: React.FC = () => {
       );
       setQuestions(updatedQuestions);
     } catch (err) {
-      console.error("Error upvoting answer:", err);
+      console.error("Error toggling answer vote:", err);
     }
   };
 
@@ -713,7 +720,7 @@ const TopicDetailsPage: React.FC = () => {
                       >
                         <IconButton
                           size="small"
-                          onClick={() => handleUpvoteQuestion(question.id)}
+                          onClick={() => handleToggleQuestionVote(question.id)}
                         >
                           <ThumbUp fontSize="small" />
                         </IconButton>
@@ -813,7 +820,7 @@ const TopicDetailsPage: React.FC = () => {
                                       <IconButton
                                         size="small"
                                         onClick={() =>
-                                          handleUpvoteAnswer(answer.id)
+                                          handleToggleAnswerVote(answer.id)
                                         }
                                       >
                                         <ThumbUp fontSize="small" />

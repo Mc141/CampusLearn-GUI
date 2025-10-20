@@ -41,8 +41,7 @@ import {
   CheckCircle,
   PersonOff,
 } from "@mui/icons-material";
-import { useAuth } from "../context/AuthContext";
-import { mockQuestions, mockTopics, mockModules } from "../data/mockData";
+import { questionsService } from "../services/questionsService";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -113,9 +112,24 @@ const QuestionsPage: React.FC = () => {
     });
   };
 
-  const handleUpvote = (questionId: string) => {
-    // In a real app, this would update the backend
-    console.log("Upvoting question:", questionId);
+  const handleToggleVote = async (questionId: string) => {
+    if (!user?.id) return;
+
+    try {
+      const result = await questionsService.toggleQuestionVote(
+        questionId,
+        user.id
+      );
+      // Update local state - you might want to implement proper state management here
+      console.log(
+        "Toggled vote for question:",
+        questionId,
+        "New count:",
+        result.voteCount
+      );
+    } catch (err) {
+      console.error("Error toggling question vote:", err);
+    }
   };
 
   const handleAnswer = (questionId: string) => {
@@ -332,7 +346,7 @@ const QuestionsPage: React.FC = () => {
                               >
                                 <IconButton
                                   size="small"
-                                  onClick={() => handleUpvote(question.id)}
+                                  onClick={() => handleToggleVote(question.id)}
                                 >
                                   <ThumbUp fontSize="small" />
                                 </IconButton>

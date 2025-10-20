@@ -184,34 +184,32 @@ const PostDetailsPage: React.FC = () => {
     }
   };
 
-  // Upvote post
-  const upvotePost = async () => {
-    if (!post) return;
+  // Toggle vote for post
+  const togglePostVote = async () => {
+    if (!post || !user?.id) return;
 
     try {
-      await forumService.upvotePost(post.id);
-      setPost({ ...post, upvotes: post.upvotes + 1 });
+      const result = await forumService.togglePostVote(post.id, user.id);
+      setPost({ ...post, upvotes: result.voteCount });
     } catch (err) {
-      console.error("Error upvoting post:", err);
+      console.error("Error toggling post vote:", err);
     }
   };
 
-  // Upvote reply
-  const upvoteReply = async (replyId: string) => {
-    if (!post) return;
+  // Toggle vote for reply
+  const toggleReplyVote = async (replyId: string) => {
+    if (!post || !user?.id) return;
 
     try {
-      await forumService.upvoteReply(replyId);
+      const result = await forumService.toggleReplyVote(replyId, user.id);
       setPost({
         ...post,
         replies: post.replies.map((reply) =>
-          reply.id === replyId
-            ? { ...reply, upvotes: reply.upvotes + 1 }
-            : reply
+          reply.id === replyId ? { ...reply, upvotes: result.voteCount } : reply
         ),
       });
     } catch (err) {
-      console.error("Error upvoting reply:", err);
+      console.error("Error toggling reply vote:", err);
     }
   };
 
@@ -288,8 +286,8 @@ const PostDetailsPage: React.FC = () => {
               {post.title}
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Tooltip title="Upvote">
-                <IconButton onClick={upvotePost}>
+              <Tooltip title="Like">
+                <IconButton onClick={togglePostVote}>
                   <ThumbUp />
                 </IconButton>
               </Tooltip>

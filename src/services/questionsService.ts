@@ -171,36 +171,51 @@ export const questionsService = {
     }
   },
 
-  // Upvote a question
-  async upvoteQuestion(questionId: string): Promise<void> {
+  // Toggle vote for a question (like/unlike)
+  async toggleQuestionVote(questionId: string, userId: string): Promise<{ voteCount: number; hasVoted: boolean }> {
     try {
-      // First get current upvotes
-      const { data: question, error: fetchError } = await supabase
-        .from('questions')
-        .select('upvotes')
-        .eq('id', questionId)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching question for upvote:', fetchError);
-        throw fetchError;
-      }
-
-      // Update with incremented upvotes
-      const { error } = await supabase
-        .from('questions')
-        .update({ 
-          upvotes: (question.upvotes || 0) + 1,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', questionId);
+      const { data, error } = await supabase.rpc('toggle_vote', {
+        p_table_name: 'questions',
+        p_entity_id: questionId,
+        p_user_id: userId,
+        p_vote_type: 'upvote'
+      });
 
       if (error) {
-        console.error('Error upvoting question:', error);
+        console.error('Error toggling question vote:', error);
         throw error;
       }
+
+      return {
+        voteCount: data.vote_count,
+        hasVoted: data.has_voted
+      };
     } catch (error) {
-      console.error('Error in upvoteQuestion:', error);
+      console.error('Error in toggleQuestionVote:', error);
+      throw error;
+    }
+  },
+
+  // Get vote info for a question
+  async getQuestionVoteInfo(questionId: string, userId: string): Promise<{ voteCount: number; hasVoted: boolean }> {
+    try {
+      const { data, error } = await supabase.rpc('get_vote_info', {
+        p_table_name: 'questions',
+        p_entity_id: questionId,
+        p_user_id: userId
+      });
+
+      if (error) {
+        console.error('Error getting question vote info:', error);
+        throw error;
+      }
+
+      return {
+        voteCount: data.vote_count,
+        hasVoted: data.has_voted
+      };
+    } catch (error) {
+      console.error('Error in getQuestionVoteInfo:', error);
       throw error;
     }
   },

@@ -17,6 +17,7 @@ import {
   ExpandMore,
   ExpandLess,
 } from "@mui/icons-material";
+import { useAuth } from "../context/AuthContext";
 import { AnswerReply } from "../types";
 import { answerReplyService } from "../services/answerReplyService";
 import { formatDistanceToNow } from "date-fns";
@@ -35,14 +36,17 @@ const AnswerReplies: React.FC<AnswerRepliesProps> = ({
   onRepliesUpdated,
   onOpenReplyDialog,
 }) => {
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
 
-  const handleUpvote = async (replyId: string) => {
+  const handleToggleVote = async (replyId: string) => {
+    if (!user?.id) return;
+
     try {
-      await answerReplyService.upvoteReply(replyId);
+      const result = await answerReplyService.toggleReplyVote(replyId, user.id);
       onRepliesUpdated(); // Refresh to show updated upvotes
     } catch (error) {
-      console.error("Error upvoting reply:", error);
+      console.error("Error toggling reply vote:", error);
     }
   };
 
@@ -161,7 +165,7 @@ const AnswerReplies: React.FC<AnswerRepliesProps> = ({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <IconButton
                     size="small"
-                    onClick={() => handleUpvote(reply.id)}
+                    onClick={() => handleToggleVote(reply.id)}
                   >
                     <ThumbUp fontSize="small" />
                   </IconButton>
