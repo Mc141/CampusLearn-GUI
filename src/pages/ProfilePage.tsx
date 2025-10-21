@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -26,6 +26,7 @@ import {
   Switch,
   FormControlLabel,
   FormGroup,
+  CircularProgress,
 } from "@mui/material";
 import {
   Edit,
@@ -44,15 +45,30 @@ import {
   Description,
   Notifications,
   NotificationsOff,
+  QuestionAnswer,
+  Reply,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { mockModules } from "../data/mockData";
 import { userProfileService } from "../services/userProfileService";
+import {
+  userActivityService,
+  UserActivity,
+} from "../services/userActivityService";
 import ProfilePictureUpload from "../components/ProfilePictureUpload";
 
 const ProfilePage: React.FC = () => {
   const { user, refreshUserProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [recentActivity, setRecentActivity] = useState<UserActivity[]>([]);
+  const [userStats, setUserStats] = useState({
+    questionsAsked: 0,
+    topicsSubscribed: 0,
+    messagesSent: 0,
+    answersPosted: 0,
+    repliesPosted: 0,
+  });
   const [profileData, setProfileData] = useState({
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
@@ -80,6 +96,30 @@ const ProfilePage: React.FC = () => {
     user?.profilePicture || null
   );
   const [openModuleDialog, setOpenModuleDialog] = useState(false);
+
+  // Load user activity and stats
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!user?.id) return;
+
+      try {
+        setLoading(true);
+        const [activity, stats] = await Promise.all([
+          userActivityService.getUserRecentActivity(user.id, 5),
+          userActivityService.getUserStats(user.id),
+        ]);
+
+        setRecentActivity(activity);
+        setUserStats(stats);
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [user?.id]);
 
   const handleSave = async () => {
     if (!user?.id) return;
@@ -159,6 +199,27 @@ const ProfilePage: React.FC = () => {
 
   const studentNumber = extractStudentNumber(user?.email || "");
 
+  // Helper function to format time ago
+  const getTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+
+    if (diffInDays > 0) {
+      return diffInDays === 1 ? "1 day ago" : `${diffInDays} days ago`;
+    } else if (diffInHours > 0) {
+      return diffInHours === 1 ? "1 hour ago" : `${diffInHours} hours ago`;
+    } else if (diffInMinutes > 0) {
+      return diffInMinutes === 1
+        ? "1 minute ago"
+        : `${diffInMinutes} minutes ago`;
+    } else {
+      return "Just now";
+    }
+  };
+
   const handleFetchGitHubProfile = async () => {
     if (!profileData.githubUsername) return;
 
@@ -177,10 +238,22 @@ const ProfilePage: React.FC = () => {
   };
 
   const stats = [
-    { label: "Questions Asked", value: 12, icon: <Assignment /> },
-    { label: "Topics Subscribed", value: 5, icon: <School /> },
-    { label: "Messages Sent", value: 28, icon: <Person /> },
-    { label: "Learning Progress", value: 75, icon: <TrendingUp /> },
+    {
+      label: "Questions Asked",
+      value: userStats.questionsAsked,
+      icon: <Assignment />,
+    },
+    {
+      label: "Topics Subscribed",
+      value: userStats.topicsSubscribed,
+      icon: <School />,
+    },
+    { label: "Messages Sent", value: userStats.messagesSent, icon: <Person /> },
+    {
+      label: "Answers Posted",
+      value: userStats.answersPosted,
+      icon: <QuestionAnswer />,
+    },
   ];
 
   return (
@@ -555,37 +628,48 @@ const ProfilePage: React.FC = () => {
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
                 Recent Activity
               </Typography>
-              <List>
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <CheckCircle color="success" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Question answered"
-                    secondary="How to calculate working capital? - 2 days ago"
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <Assignment color="primary" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="New question posted"
-                    secondary="Inheritance vs Composition - 3 days ago"
-                  />
-                </ListItem>
-                <Divider />
-                <ListItem sx={{ px: 0 }}>
-                  <ListItemIcon>
-                    <School color="secondary" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Subscribed to topic"
-                    secondary="Financial Statement Analysis - 1 week ago"
-                  />
-                </ListItem>
-              </List>
+              {loading ? (
+                <Box display="flex" justifyContent="center" p={3}>
+                  <CircularProgress />
+                </Box>
+              ) : recentActivity.length === 0 ? (
+                <Typography
+                  color="text.secondary"
+                  sx={{ textAlign: "center", py: 3 }}
+                >
+                  No recent activity found
+                </Typography>
+              ) : (
+                <List>
+                  {recentActivity.map((activity, index) => (
+                    <React.Fragment key={activity.id}>
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          {activity.type === "question_posted" && (
+                            <Assignment color="primary" />
+                          )}
+                          {activity.type === "answer_posted" && (
+                            <CheckCircle color="success" />
+                          )}
+                          {activity.type === "topic_subscribed" && (
+                            <School color="secondary" />
+                          )}
+                          {activity.type === "reply_posted" && (
+                            <Reply color="info" />
+                          )}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={activity.title}
+                          secondary={`${activity.description} - ${getTimeAgo(
+                            activity.createdAt
+                          )}`}
+                        />
+                      </ListItem>
+                      {index < recentActivity.length - 1 && <Divider />}
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
             </CardContent>
           </Card>
         </Grid>

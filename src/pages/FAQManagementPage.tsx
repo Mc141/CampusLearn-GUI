@@ -145,13 +145,13 @@ const FAQManagementPage: React.FC = () => {
         answer: newFAQ.answer,
         category: newFAQ.category,
         tags: newFAQ.tags,
-        isPublished: true,
-      };
+      isPublished: true,
+    };
 
       await faqService.createFAQ(faqData);
       setSuccessMessage("FAQ created successfully!");
-      setNewFAQ({ question: "", answer: "", category: "", tags: [] });
-      setOpenDialog(false);
+    setNewFAQ({ question: "", answer: "", category: "", tags: [] });
+    setOpenDialog(false);
       loadFAQs(); // Reload FAQs
       loadStats(); // Reload stats
     } catch (err) {
@@ -373,9 +373,9 @@ const FAQManagementPage: React.FC = () => {
         </Box>
       ) : (
         filteredFAQs.map((faq) => (
-          <Accordion
-            key={faq.id}
-            expanded={expandedFAQ === faq.id}
+        <Accordion
+          key={faq.id}
+          expanded={expandedFAQ === faq.id}
             onChange={(_, isExpanded) => {
               setExpandedFAQ(isExpanded ? faq.id : false);
               if (isExpanded) {
@@ -390,44 +390,44 @@ const FAQManagementPage: React.FC = () => {
                 exit: "cubic-bezier(0.4, 0, 0.2, 1)",
               },
             }}
-            sx={{ mb: 1 }}
-          >
-            <AccordionSummary expandIcon={<ExpandMore />}>
+          sx={{ mb: 1 }}
+        >
+          <AccordionSummary expandIcon={<ExpandMore />}>
               <Box
                 sx={{ display: "flex", alignItems: "center", width: "100%" }}
               >
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                    {faq.question}
-                  </Typography>
-                  <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-                    <Chip label={faq.category} size="small" color="primary" />
-                    <Chip
-                      label={faq.isPublished ? "Published" : "Draft"}
-                      size="small"
-                      color={faq.isPublished ? "success" : "default"}
-                    />
-                  </Box>
-                </Box>
-                <Box sx={{ display: "flex", gap: 1, mr: 2 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {faq.views} views
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {faq.helpful} helpful
-                  </Typography>
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                  {faq.question}
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                  <Chip label={faq.category} size="small" color="primary" />
+                  <Chip
+                    label={faq.isPublished ? "Published" : "Draft"}
+                    size="small"
+                    color={faq.isPublished ? "success" : "default"}
+                  />
                 </Box>
               </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {faq.answer}
-              </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 2 }}>
-                {faq.tags.map((tag) => (
-                  <Chip key={tag} label={tag} size="small" variant="outlined" />
-                ))}
+              <Box sx={{ display: "flex", gap: 1, mr: 2 }}>
+                <Typography variant="caption" color="text.secondary">
+                  {faq.views} views
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {faq.helpful} helpful
+                </Typography>
               </Box>
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              {faq.answer}
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 2 }}>
+              {faq.tags.map((tag) => (
+                <Chip key={tag} label={tag} size="small" variant="outlined" />
+              ))}
+            </Box>
 
               {/* Feedback buttons for all users */}
               <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
@@ -460,36 +460,36 @@ const FAQManagementPage: React.FC = () => {
               </Box>
 
               {/* Management buttons for admins and tutors */}
-              {(user?.role === "admin" || user?.role === "tutor") && (
-                <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
-                  <Button
-                    size="small"
-                    startIcon={<Edit />}
-                    onClick={() => handleEditFAQ(faq)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="small"
-                    startIcon={
-                      faq.isPublished ? <VisibilityOff /> : <Visibility />
-                    }
-                    onClick={() => handleTogglePublish(faq.id)}
-                  >
-                    {faq.isPublished ? "Unpublish" : "Publish"}
-                  </Button>
-                  <Button
-                    size="small"
-                    color="error"
-                    startIcon={<Delete />}
-                    onClick={() => handleDeleteFAQ(faq.id)}
-                  >
-                    Delete
-                  </Button>
-                </Box>
-              )}
-            </AccordionDetails>
-          </Accordion>
+            {(user?.role === "admin" || user?.role === "tutor") && (
+              <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+                <Button
+                  size="small"
+                  startIcon={<Edit />}
+                  onClick={() => handleEditFAQ(faq)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="small"
+                  startIcon={
+                    faq.isPublished ? <VisibilityOff /> : <Visibility />
+                  }
+                  onClick={() => handleTogglePublish(faq.id)}
+                >
+                  {faq.isPublished ? "Unpublish" : "Publish"}
+                </Button>
+                <Button
+                  size="small"
+                  color="error"
+                  startIcon={<Delete />}
+                  onClick={() => handleDeleteFAQ(faq.id)}
+                >
+                  Delete
+                </Button>
+              </Box>
+            )}
+          </AccordionDetails>
+        </Accordion>
         ))
       )}
     </Box>
