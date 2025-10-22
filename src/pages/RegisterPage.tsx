@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -15,11 +15,13 @@ import {
   Select,
   MenuItem,
   Grid,
+  CircularProgress,
 } from "@mui/material";
 import { School, PersonAdd } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { mockModules } from "../data/mockData";
+import { modulesService } from "../services/modulesService";
+import { Module } from "../types";
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -34,12 +36,32 @@ const RegisterPage: React.FC = () => {
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [modulesLoading, setModulesLoading] = useState(true);
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Fetch modules from database on component mount
+  useEffect(() => {
+    const fetchModules = async () => {
+      try {
+        setModulesLoading(true);
+        const fetchedModules = await modulesService.getAllModules();
+        setModules(fetchedModules);
+      } catch (error) {
+        console.error("Error fetching modules:", error);
+        setError("Failed to load modules. Please refresh the page.");
+      } finally {
+        setModulesLoading(false);
+      }
+    };
+
+    fetchModules();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,6 +220,7 @@ const RegisterPage: React.FC = () => {
                     multiple
                     value={formData.modules}
                     label="Modules"
+                    disabled={modulesLoading}
                     onChange={(e) =>
                       handleInputChange("modules", e.target.value)
                     }
@@ -205,17 +228,30 @@ const RegisterPage: React.FC = () => {
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                         {selected.map((value) => (
                           <Typography key={value} variant="body2">
-                            {mockModules.find((m) => m.code === value)?.code}
+                            {modules.find((m) => m.code === value)?.code}
                           </Typography>
                         ))}
                       </Box>
                     )}
                   >
-                    {mockModules.map((module) => (
-                      <MenuItem key={module.id} value={module.code}>
-                        {module.code} - {module.name}
+                    {modulesLoading ? (
+                      <MenuItem disabled>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <CircularProgress size={16} />
+                          <Typography variant="body2">
+                            Loading modules...
+                          </Typography>
+                        </Box>
                       </MenuItem>
-                    ))}
+                    ) : (
+                      modules.map((module) => (
+                        <MenuItem key={module.id} value={module.code}>
+                          {module.code} - {module.name}
+                        </MenuItem>
+                      ))
+                    )}
                   </Select>
                 </FormControl>
               </Grid>

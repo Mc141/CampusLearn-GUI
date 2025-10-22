@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -23,6 +23,7 @@ import {
   Step,
   StepLabel,
   StepContent,
+  CircularProgress,
 } from "@mui/material";
 import {
   School,
@@ -35,7 +36,8 @@ import {
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { mockModules } from "../data/mockData";
+import { modulesService } from "../services/modulesService";
+import { Module } from "../types";
 
 const TutorRegistrationPage: React.FC = () => {
   const { user } = useAuth();
@@ -54,6 +56,8 @@ const TutorRegistrationPage: React.FC = () => {
   });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [modulesLoading, setModulesLoading] = useState(true);
 
   const steps = [
     "Personal Information",
@@ -61,6 +65,24 @@ const TutorRegistrationPage: React.FC = () => {
     "Teaching Experience",
     "Availability & Motivation",
   ];
+
+  // Fetch modules from database on component mount
+  useEffect(() => {
+    const fetchModules = async () => {
+      try {
+        setModulesLoading(true);
+        const fetchedModules = await modulesService.getAllModules();
+        setModules(fetchedModules);
+      } catch (error) {
+        console.error("Error fetching modules:", error);
+        setError("Failed to load modules. Please refresh the page.");
+      } finally {
+        setModulesLoading(false);
+      }
+    };
+
+    fetchModules();
+  }, []);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({
@@ -172,40 +194,56 @@ const TutorRegistrationPage: React.FC = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Choose the modules you have expertise in and would like to tutor:
             </Typography>
-            <Grid container spacing={2}>
-              {mockModules.map((module) => (
-                <Grid item xs={12} sm={6} md={4} key={module.id}>
-                  <Card
-                    sx={{
-                      cursor: "pointer",
-                      border: formData.modules.includes(module.id) ? 2 : 1,
-                      borderColor: formData.modules.includes(module.id)
-                        ? "primary.main"
-                        : "divider",
-                      "&:hover": {
-                        borderColor: "primary.main",
-                      },
-                    }}
-                    onClick={() => handleModuleToggle(module.id)}
-                  >
-                    <CardContent sx={{ p: 2 }}>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {module.code}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {module.name}
-                      </Typography>
-                      <Chip
-                        label={module.level}
-                        size="small"
-                        color="secondary"
-                        sx={{ mt: 1 }}
-                      />
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+            {modulesLoading ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  py: 4,
+                }}
+              >
+                <CircularProgress />
+                <Typography variant="body2" sx={{ ml: 2 }}>
+                  Loading modules...
+                </Typography>
+              </Box>
+            ) : (
+              <Grid container spacing={2}>
+                {modules.map((module) => (
+                  <Grid item xs={12} sm={6} md={4} key={module.id}>
+                    <Card
+                      sx={{
+                        cursor: "pointer",
+                        border: formData.modules.includes(module.id) ? 2 : 1,
+                        borderColor: formData.modules.includes(module.id)
+                          ? "primary.main"
+                          : "divider",
+                        "&:hover": {
+                          borderColor: "primary.main",
+                        },
+                      }}
+                      onClick={() => handleModuleToggle(module.id)}
+                    >
+                      <CardContent sx={{ p: 2 }}>
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          {module.code}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {module.name}
+                        </Typography>
+                        <Chip
+                          label={module.level}
+                          size="small"
+                          color="secondary"
+                          sx={{ mt: 1 }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
           </Box>
         );
 
@@ -376,6 +414,3 @@ const TutorRegistrationPage: React.FC = () => {
 };
 
 export default TutorRegistrationPage;
-
-
-

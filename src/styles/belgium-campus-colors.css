@@ -1,0 +1,137 @@
+/* Belgium Campus Inspired Color Palette - CSS Variables */
+
+:root {
+  /* Light Mode Colors */
+  --bc-primary-teal: #27C5BE;
+  --bc-primary-teal-light: #33D3CA;
+  --bc-primary-teal-dark: #1FA39C;
+  
+  --bc-secondary-crimson: #A20046;
+  --bc-secondary-crimson-light: #B3145A;
+  --bc-secondary-crimson-dark: #8A0039;
+  
+  --bc-background-light: #F9F9F9;
+  --bc-background-paper: #FFFFFF;
+  --bc-text-primary: #222222;
+  --bc-text-secondary: #555555;
+  --bc-divider: #DDDDDD;
+  
+  /* Dark Mode Colors */
+  --bc-dark-primary-teal: #33D3CA;
+  --bc-dark-primary-teal-light: #4DDDD4;
+  --bc-dark-primary-teal-dark: #27C5BE;
+  
+  --bc-dark-secondary-crimson: #B3145A;
+  --bc-dark-secondary-crimson-light: #C91A6B;
+  --bc-dark-secondary-crimson-dark: #A20046;
+  
+  --bc-dark-background: #101010;
+  --bc-dark-background-paper: #181818;
+  --bc-dark-text-primary: #F9F9F9;
+  --bc-dark-text-secondary: #BFBFBF;
+  --bc-dark-divider: #404040;
+  
+  /* Gradient Combinations */
+  --bc-gradient-primary: linear-gradient(135deg, #27C5BE 0%, #A20046 100%);
+  --bc-gradient-primary-hover: linear-gradient(135deg, #1FA39C 0%, #8A0039 100%);
+  --bc-gradient-dark-primary: linear-gradient(135deg, #33D3CA 0%, #B3145A 100%);
+  --bc-gradient-dark-primary-hover: linear-gradient(135deg, #27C5BE 0%, #A20046 100%);
+  
+  /* Utility Classes */
+  .bc-text-primary { color: var(--bc-text-primary); }
+  .bc-text-secondary { color: var(--bc-text-secondary); }
+  .bc-bg-primary { background-color: var(--bc-primary-teal); }
+  .bc-bg-secondary { background-color: var(--bc-secondary-crimson); }
+  .bc-border-primary { border-color: var(--bc-primary-teal); }
+  .bc-border-secondary { border-color: var(--bc-secondary-crimson); }
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] {
+  --bc-text-primary: var(--bc-dark-text-primary);
+  --bc-text-secondary: var(--bc-dark-text-secondary);
+  --bc-bg-primary: var(--bc-dark-primary-teal);
+  --bc-bg-secondary: var(--bc-dark-secondary-crimson);
+  --bc-border-primary: var(--bc-dark-primary-teal);
+  --bc-border-secondary: var(--bc-dark-secondary-crimson);
+}
+
+/* Belgium Campus Brand Typography */
+.bc-heading {
+  font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--bc-text-primary);
+}
+
+.bc-subheading {
+  font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--bc-text-secondary);
+}
+
+/* Belgium Campus Button Styles */
+.bc-btn-primary {
+  background: var(--bc-gradient-primary);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: none;
+  transition: all 0.2s ease-in-out;
+  box-shadow: none;
+}
+
+.bc-btn-primary:hover {
+  background: var(--bc-gradient-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.bc-btn-secondary {
+  background: var(--bc-secondary-crimson);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: none;
+  transition: all 0.2s ease-in-out;
+  box-shadow: none;
+}
+
+.bc-btn-secondary:hover {
+  background: var(--bc-secondary-crimson-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Belgium Campus Card Styles */
+.bc-card {
+  background: var(--bc-background-paper);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.05);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease-in-out;
+}
+
+.bc-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+/* Dark mode card styles */
+[data-theme="dark"] .bc-card {
+  background: var(--bc-dark-background-paper);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .bc-card:hover {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}

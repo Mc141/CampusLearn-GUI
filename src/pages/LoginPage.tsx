@@ -95,16 +95,6 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const demoAccounts = [
-    {
-      email: "577963@student.belgiumcampus.ac.za",
-      password: "password",
-      role: "Student",
-    },
-    { email: "tutor@belgiumcampus.ac.za", password: "password", role: "Tutor" },
-    { email: "admin@belgiumcampus.ac.za", password: "password", role: "Admin" },
-  ];
-
   return (
     <Container maxWidth="sm">
       <Box
@@ -213,36 +203,6 @@ const LoginPage: React.FC = () => {
                 Sign up here
               </Link>
             </Typography>
-          </Box>
-
-          <Divider sx={{ my: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              Demo Accounts
-            </Typography>
-          </Divider>
-
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {demoAccounts.map((account) => (
-              <Button
-                key={account.role}
-                variant="outlined"
-                size="small"
-                onClick={() => {
-                  setEmail(account.email);
-                  setPassword(account.password);
-                }}
-                sx={{ justifyContent: "flex-start", textTransform: "none" }}
-              >
-                <Box sx={{ textAlign: "left" }}>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {account.role}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {account.email}
-                  </Typography>
-                </Box>
-              </Button>
-            ))}
           </Box>
         </Paper>
       </Box>
