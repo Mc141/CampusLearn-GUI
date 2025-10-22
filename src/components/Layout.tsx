@@ -26,18 +26,14 @@ import {
   Message,
   Person,
   Topic,
-  Quiz,
   SmartToy,
-  Notifications,
   Logout,
   School,
   LightMode,
   DarkMode,
   Assignment,
-  CloudUpload,
   Settings,
   Help,
-  TrendingUp,
   People,
   PersonAdd,
   AdminPanelSettings,
@@ -96,10 +92,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       { text: "Messages", icon: <Message />, path: "/messages" },
       { text: "Profile", icon: <Person />, path: "/profile" },
       { text: "Topics", icon: <Topic />, path: "/topics" },
-      { text: "Questions", icon: <Quiz />, path: "/questions" },
       { text: "AI Assistant", icon: <SmartToy />, path: "/chatbot" },
-      { text: "Resources", icon: <CloudUpload />, path: "/resources" },
-      { text: "Trending", icon: <TrendingUp />, path: "/trending" },
       { text: "FAQ", icon: <Help />, path: "/faq" },
     ];
 
@@ -159,11 +152,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         text: "Escalation Management",
         icon: <Assignment />,
         path: "/admin/escalations",
-      });
-      baseItems.splice(7, 0, {
-        text: "Notifications",
-        icon: <Settings />,
-        path: "/notifications",
       });
     }
 

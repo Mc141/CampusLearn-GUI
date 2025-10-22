@@ -49,7 +49,8 @@ import {
   Reply,
 } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
-import { mockModules } from "../data/mockData";
+import { modulesService } from "../services/modulesService";
+import { Module } from "../types";
 import { userProfileService } from "../services/userProfileService";
 import {
   userActivityService,
@@ -96,6 +97,25 @@ const ProfilePage: React.FC = () => {
     user?.profilePicture || null
   );
   const [openModuleDialog, setOpenModuleDialog] = useState(false);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [modulesLoading, setModulesLoading] = useState(false);
+
+  // Load modules from database
+  useEffect(() => {
+    const loadModules = async () => {
+      try {
+        setModulesLoading(true);
+        const modulesData = await modulesService.getAllModules();
+        setModules(modulesData);
+      } catch (error) {
+        console.error("Error loading modules:", error);
+      } finally {
+        setModulesLoading(false);
+      }
+    };
+
+    loadModules();
+  }, []);
 
   // Load user activity and stats
   useEffect(() => {
@@ -434,7 +454,7 @@ const ProfilePage: React.FC = () => {
                   </Box>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                     {profileData.modules.map((moduleId) => {
-                      const module = mockModules.find((m) => m.id === moduleId);
+                      const module = modules.find((m) => m.id === moduleId);
                       return (
                         <Chip
                           key={moduleId}
@@ -684,32 +704,38 @@ const ProfilePage: React.FC = () => {
       >
         <DialogTitle>Select Modules</DialogTitle>
         <DialogContent>
-          <FormControl fullWidth>
-            <InputLabel>Modules</InputLabel>
-            <Select
-              multiple
-              value={profileData.modules}
-              label="Modules"
-              onChange={(e) => handleInputChange("modules", e.target.value)}
-              renderValue={(selected) => (
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                  {selected.map((value) => (
-                    <Chip
-                      key={value}
-                      label={mockModules.find((m) => m.id === value)?.code}
-                      size="small"
-                    />
-                  ))}
-                </Box>
-              )}
-            >
-              {mockModules.map((module) => (
-                <MenuItem key={module.id} value={module.id}>
-                  {module.code} - {module.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {modulesLoading ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <FormControl fullWidth>
+              <InputLabel>Modules</InputLabel>
+              <Select
+                multiple
+                value={profileData.modules}
+                label="Modules"
+                onChange={(e) => handleInputChange("modules", e.target.value)}
+                renderValue={(selected) => (
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                    {selected.map((value) => (
+                      <Chip
+                        key={value}
+                        label={modules.find((m) => m.id === value)?.code}
+                        size="small"
+                      />
+                    ))}
+                  </Box>
+                )}
+              >
+                {modules.map((module) => (
+                  <MenuItem key={module.id} value={module.id}>
+                    {module.code} - {module.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenModuleDialog(false)}>Cancel</Button>

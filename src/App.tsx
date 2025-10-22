@@ -98,10 +98,6 @@ const App: React.FC = () => {
             element={<TutorRegistrationPage />}
           />
           <Route path="/resources" element={<ResourceManagementPage />} />
-          <Route
-            path="/notifications"
-            element={<NotificationManagementPage />}
-          />
           <Route path="/faq" element={<FAQPage />} />
           <Route
             path="/faq-management"

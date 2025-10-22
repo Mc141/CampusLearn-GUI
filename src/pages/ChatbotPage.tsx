@@ -168,6 +168,13 @@ const ChatbotPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading || !currentConversation) return;
 
+    // Check word limit (300 words)
+    const wordCount = inputMessage.trim().split(/\s+/).length;
+    if (wordCount > 300) {
+      setError("Message too long. Please keep it under 300 words.");
+      return;
+    }
+
     // Check if context limit reached
     if (currentConversation.contextLimitReached) {
       setError("Context limit reached. Please start a new chat.");
@@ -437,9 +444,14 @@ const ChatbotPage: React.FC = () => {
     },
   ];
 
+  const wordCount = inputMessage
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0).length;
   const canSendMessage =
     !isLoading &&
     inputMessage.trim() &&
+    wordCount <= 300 &&
     !currentConversation?.contextLimitReached;
 
   return (
@@ -713,26 +725,40 @@ const ChatbotPage: React.FC = () => {
       {/* Input */}
       <Paper sx={{ p: 2, borderRadius: 0, flexShrink: 0 }}>
         <Box sx={{ display: "flex", gap: 2, alignItems: "flex-end" }}>
-          <TextField
-            fullWidth
-            placeholder={
-              currentConversation?.contextLimitReached
-                ? "Context limit reached. Please start a new chat."
-                : "Ask me anything about CampusLearn, your modules, or academic support..."
-            }
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={isLoading || currentConversation?.contextLimitReached}
-            multiline
-            maxRows={3}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 3,
-                paddingRight: 1,
-              },
-            }}
-          />
+          <Box sx={{ flex: 1 }}>
+            <TextField
+              fullWidth
+              placeholder={
+                currentConversation?.contextLimitReached
+                  ? "Context limit reached. Please start a new chat."
+                  : "Ask me anything about CampusLearn, your modules, or academic support..."
+              }
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={isLoading || currentConversation?.contextLimitReached}
+              multiline
+              maxRows={3}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 3,
+                  paddingRight: 1,
+                },
+              }}
+            />
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                {wordCount}/300 words
+              </Typography>
+              {wordCount > 300 && (
+                <Typography variant="caption" color="error">
+                  Message too long
+                </Typography>
+              )}
+            </Box>
+          </Box>
           <IconButton
             onClick={handleSendMessage}
             disabled={!canSendMessage}

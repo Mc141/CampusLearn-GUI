@@ -199,7 +199,7 @@ const AdminDashboard: React.FC = () => {
       ) : (
         <>
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-            Admin Dashboard, {user?.firstName}! ⚙️
+            Welcome back, {user?.firstName}! 👋
           </Typography>
 
           {/* Stats Cards */}

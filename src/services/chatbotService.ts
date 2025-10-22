@@ -31,22 +31,27 @@ class ChatbotService {
   ): Promise<ChatbotResponse> {
     try {
       const context = this.buildContext(user, conversationHistory);
+      const formattedHistory = this.formatConversationHistory(conversationHistory);
       
+      const requestBody = {
+        question: message,
+        context: context,
+        conversationHistory: formattedHistory,
+        userRole: user?.role || 'student',
+        userModules: user?.modules || [],
+        currentMessage: message,
+        prompt: `${context}${formattedHistory}NEW MESSAGE: "${message}"\n\nRespond to this message considering the conversation context above. If the user is asking about something related to previous topics (like adding features to code), provide specific help that builds on the previous discussion.`
+      };
+
+      console.log('🤖 CHATBOT REQUEST BODY:');
+      console.log(JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(this.apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          question: message,
-          context: context,
-          userRole: user?.role || 'student',
-          userModules: user?.modules || [],
-          conversationHistory: conversationHistory.slice(-5).map(msg => ({
-            role: msg.isFromBot ? 'assistant' : 'user',
-            content: msg.content
-          }))
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -83,37 +88,47 @@ class ChatbotService {
   }
 
   private buildContext(user: User | null, history: ChatbotMessage[]): string {
-    let context = "You are CampusLearn AI Assistant, helping Belgium Campus students with academic support.\n\n";
+    let context = "";
     
     if (user) {
-      context += `User Information:\n`;
-      context += `- Role: ${user.role}\n`;
-      context += `- Name: ${user.firstName} ${user.lastName}\n`;
+      context += `User: ${user.firstName} ${user.lastName} (${user.role})\n`;
       
       if (user.modules && user.modules.length > 0) {
-        context += `- Modules: ${user.modules.join(', ')}\n`;
+        context += `Modules: ${user.modules.join(', ')}\n`;
       }
       
       if (user.role === 'student') {
-        context += `- Student Number: ${this.extractStudentNumber(user.email)}\n`;
+        const studentNumber = this.extractStudentNumber(user.email);
+        if (studentNumber) {
+          context += `Student Number: ${studentNumber}\n`;
+        }
       }
+      
+      context += `\n`;
     }
 
-    context += `\nCampusLearn Platform Features:\n`;
-    context += `- Topics: Students can create topics and get help from tutors\n`;
-    context += `- Forum: Public discussion forum for academic questions\n`;
-    context += `- Messaging: Private messaging with tutors\n`;
-    context += `- Resources: Learning materials, videos, PDFs\n`;
-    context += `- Modules: BCom, BIT, Diploma programs\n\n`;
-
-    context += `Your capabilities:\n`;
-    context += `- Answer FAQs about campus, modules, and platform\n`;
-    context += `- Provide study tips and academic guidance\n`;
-    context += `- Help with platform navigation\n`;
-    context += `- Escalate complex questions to human tutors\n`;
-    context += `- Suggest relevant topics and resources\n\n`;
-
     return context;
+  }
+
+  private formatConversationHistory(history: ChatbotMessage[]): string {
+    if (history.length === 0) {
+      return "";
+    }
+
+    // Take the last 10 messages to avoid context overflow
+    const recentHistory = history.slice(-10);
+    
+    let formattedHistory = "CONVERSATION:\n\n";
+    
+    recentHistory.forEach((msg, index) => {
+      const role = msg.isFromBot ? "Assistant" : "User";
+      
+      formattedHistory += `${role}: ${msg.content}\n\n`;
+    });
+    
+    formattedHistory += "CONTEXT: The user is asking a follow-up question related to the previous conversation. Provide a helpful response that builds on the previous discussion.\n\n";
+    
+    return formattedHistory;
   }
 
   private extractStudentNumber(email: string): string | null {
