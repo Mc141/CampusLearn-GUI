@@ -11,33 +11,28 @@ import { AuthProvider } from "./context/AuthContext.tsx";
 import { ThemeProvider, useTheme } from "./context/ThemeContext.tsx";
 import "./styles/belgium-campus-colors.css";
 
-// Belgium Campus inspired theme configuration
 const createAppTheme = (mode: "light" | "dark") =>
   createTheme({
     palette: {
       mode,
-      // Belgium Campus Primary Brand Colors
       primary: {
-        main: mode === "light" ? "#27C5BE" : "#33D3CA", // Teal Cyan - Belgium Campus signature
-        light: mode === "light" ? "#33D3CA" : "#4DDDD4", // Aqua Mint variant
-        dark: mode === "light" ? "#1FA39C" : "#27C5BE", // Darker teal
+        main: mode === "light" ? "#27C5BE" : "#33D3CA",
+        light: mode === "light" ? "#33D3CA" : "#4DDDD4",
+        dark: mode === "light" ? "#1FA39C" : "#27C5BE",
       },
       secondary: {
-        main: mode === "light" ? "#A20046" : "#B3145A", // Deep Crimson - Belgium Campus accent
-        light: mode === "light" ? "#B3145A" : "#C91A6B", // Raspberry variant
-        dark: mode === "light" ? "#8A0039" : "#A20046", // Darker crimson
+        main: mode === "light" ? "#A20046" : "#B3145A",
+        light: mode === "light" ? "#B3145A" : "#C91A6B",
+        dark: mode === "light" ? "#8A0039" : "#A20046",
       },
-      // Background colors
       background: {
-        default: mode === "light" ? "#F9F9F9" : "#101010", // White Smoke / Jet Black
-        paper: mode === "light" ? "#FFFFFF" : "#181818", // White / Graphite Black
+        default: mode === "light" ? "#F9F9F9" : "#101010",
+        paper: mode === "light" ? "#FFFFFF" : "#181818",
       },
-      // Text colors
       text: {
-        primary: mode === "light" ? "#222222" : "#F9F9F9", // Charcoal Black / White Smoke
-        secondary: mode === "light" ? "#555555" : "#BFBFBF", // Graphite Grey / Cool Grey
+        primary: mode === "light" ? "#222222" : "#F9F9F9",
+        secondary: mode === "light" ? "#555555" : "#BFBFBF",
       },
-      // Semantic colors
       success: {
         main: "#10b981",
         light: "#34d399",
@@ -54,12 +49,11 @@ const createAppTheme = (mode: "light" | "dark") =>
         dark: "#dc2626",
       },
       info: {
-        main: "#27C5BE", // Use Belgium Campus teal for info
+        main: "#27C5BE",
         light: "#33D3CA",
         dark: "#1FA39C",
       },
-      // Custom Belgium Campus colors
-      divider: mode === "light" ? "#DDDDDD" : "#404040", // Silver Grey / Dark divider
+      divider: mode === "light" ? "#DDDDDD" : "#404040",
     },
     typography: {
       fontFamily:
@@ -123,13 +117,13 @@ const createAppTheme = (mode: "light" | "dark") =>
           contained: {
             background:
               mode === "light"
-                ? "linear-gradient(135deg, #27C5BE 0%, #A20046 100%)" // Belgium Campus teal to crimson
-                : "linear-gradient(135deg, #33D3CA 0%, #B3145A 100%)", // Dark mode variant
+                ? "linear-gradient(135deg, #27C5BE 0%, #A20046 100%)"
+                : "linear-gradient(135deg, #33D3CA 0%, #B3145A 100%)",
             "&:hover": {
               background:
                 mode === "light"
-                  ? "linear-gradient(135deg, #1FA39C 0%, #8A0039 100%)" // Darker variants
-                  : "linear-gradient(135deg, #27C5BE 0%, #A20046 100%)", // Original colors on hover
+                  ? "linear-gradient(135deg, #1FA39C 0%, #8A0039 100%)"
+                  : "linear-gradient(135deg, #27C5BE 0%, #A20046 100%)",
             },
           },
         },
@@ -181,7 +175,7 @@ const createAppTheme = (mode: "light" | "dark") =>
             "& .MuiOutlinedInput-root": {
               borderRadius: 12,
               "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: mode === "light" ? "#27C5BE" : "#33D3CA", // Belgium Campus teal
+                borderColor: mode === "light" ? "#27C5BE" : "#33D3CA",
               },
             },
           },
@@ -190,7 +184,6 @@ const createAppTheme = (mode: "light" | "dark") =>
     },
   });
 
-// Theme wrapper component
 const ThemeWrapper: React.FC = () => {
   const { mode } = useTheme();
   const theme = createAppTheme(mode);

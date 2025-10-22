@@ -30,7 +30,6 @@ class ChatbotService {
     conversationId?: string
   ): Promise<ChatbotResponse> {
     try {
-      // Prepare context for the chatbot
       const context = this.buildContext(user, conversationHistory);
       
       const response = await fetch(this.apiUrl, {
@@ -56,10 +55,8 @@ class ChatbotService {
 
       const result = await response.json();
       
-      // Parse the response and determine if escalation is needed
       const parsedResponse = this.parseResponse(result, message);
       
-      // Handle escalation if needed
       if (parsedResponse.escalated && user?.id && conversationId) {
         await this.handleEscalation(
           conversationId,

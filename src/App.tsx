@@ -36,7 +36,6 @@ import TopicManagementPage from "./pages/TopicManagementPage";
 const App: React.FC = () => {
   const { user, isLoading } = useAuth();
 
-  // Show loading spinner while checking authentication
   if (isLoading) {
     return (
       <Box

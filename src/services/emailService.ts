@@ -1,11 +1,9 @@
 import emailjs from '@emailjs/browser';
 
-// EmailJS configuration
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
-// Initialize EmailJS
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
 export interface EmailNotificationData {
@@ -32,14 +30,9 @@ export interface EmailPreferences {
 }
 
 class EmailService {
-  /**
-   * Send email notification using EmailJS
-   * @param data - Email notification data
-   * @returns Promise<boolean> - Success status
-   */
   async sendEmailNotification(data: EmailNotificationData): Promise<boolean> {
     try {
-      console.log('📧 Sending email notification:', {
+      console.log('Sending email notification:', {
         to: data.to_email,
         type: data.notification_type,
         title: data.notification_title

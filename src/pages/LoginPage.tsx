@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import {
   Box,
-  Card,
-  CardContent,
   TextField,
   Button,
   Typography,
@@ -10,7 +8,6 @@ import {
   Alert,
   Container,
   Paper,
-  Divider,
 } from "@mui/material";
 import { School, Login as LoginIcon } from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
@@ -27,17 +24,14 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check for success message from registration and ban messages
   React.useEffect(() => {
     if (location.state?.message) {
       setSuccessMessage(location.state.message);
       if (location.state.email) {
         setEmail(location.state.email);
       }
-      // Clear the state to prevent the message from persisting
       window.history.replaceState({}, document.title);
 
-      // Auto-dismiss success message after 10 seconds
       const timer = setTimeout(() => {
         setSuccessMessage("");
       }, 10000);
@@ -45,30 +39,27 @@ const LoginPage: React.FC = () => {
       return () => clearTimeout(timer);
     }
 
-    // Check for ban message from sessionStorage
     const banMessage = sessionStorage.getItem("banMessage");
     if (banMessage) {
       setError(banMessage);
-      sessionStorage.removeItem("banMessage"); // Clear after displaying
+      sessionStorage.removeItem("banMessage");
     }
   }, [location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSuccessMessage(""); // Clear success message on login attempt
+    setSuccessMessage("");
     setIsLoading(true);
 
     try {
       const result = await login(email, password);
       if (result.success) {
-        // Small delay to ensure auth state is updated
         setTimeout(() => {
           navigate("/", { replace: true });
         }, 100);
       } else {
         setError(result.error || "Login failed");
-        // Show resend button if email not confirmed
         if (result.error?.includes("confirmation link")) {
           setShowResendButton(true);
         }
@@ -81,7 +72,7 @@ const LoginPage: React.FC = () => {
   };
 
   const handleResendConfirmation = async () => {
-    setError(""); // Clear any existing errors
+    setError("");
     try {
       const success = await resendConfirmation(email);
       if (success) {

@@ -130,7 +130,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
 
     if (user?.role === "admin") {
-      // Add admin items in logical order
       baseItems.splice(1, 0, {
         text: "Admin Panel",
         icon: <School />,
@@ -168,7 +167,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       });
     }
 
-    // Add tutor registration for students
     if (user?.role === "student") {
       baseItems.push({
         text: "Become a Tutor",

@@ -2,7 +2,6 @@ import { supabase } from '../lib/supabase';
 import { Module } from '../types';
 
 export const modulesService = {
-  // Get all modules
   async getAllModules(): Promise<Module[]> {
     try {
       const { data, error } = await supabase
@@ -28,7 +27,6 @@ export const modulesService = {
     }
   },
 
-  // Get modules by level
   async getModulesByLevel(level: string): Promise<Module[]> {
     try {
       const { data, error } = await supabase
@@ -55,7 +53,6 @@ export const modulesService = {
     }
   },
 
-  // Get user's modules
   async getUserModules(userId: string): Promise<Module[]> {
     try {
       const { data, error } = await supabase

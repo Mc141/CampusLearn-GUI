@@ -66,7 +66,6 @@ const TutorRegistrationPage: React.FC = () => {
     "Availability & Motivation",
   ];
 
-  // Fetch modules from database on component mount
   useEffect(() => {
     const fetchModules = async () => {
       try {
@@ -113,13 +112,8 @@ const TutorRegistrationPage: React.FC = () => {
     setError("");
 
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // In a real app, this would submit to backend
       console.log("Tutor registration submitted:", formData);
-
-      // Show success message and redirect
       alert(
         "Tutor registration submitted successfully! You will be notified once approved."
       );

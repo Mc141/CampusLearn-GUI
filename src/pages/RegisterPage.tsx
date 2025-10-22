@@ -16,12 +16,24 @@ import {
   MenuItem,
   Grid,
   CircularProgress,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
-import { School, PersonAdd } from "@mui/icons-material";
+import {
+  School,
+  PersonAdd,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { modulesService } from "../services/modulesService";
 import { Module } from "../types";
+import {
+  validatePasswordStrength,
+  PasswordStrength,
+} from "../utils/passwordValidation";
+import PasswordStrengthIndicator from "../components/PasswordStrengthIndicator";
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -38,14 +50,53 @@ const RegisterPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [modules, setModules] = useState<Module[]>([]);
   const [modulesLoading, setModulesLoading] = useState(true);
+  const [passwordStrength, setPasswordStrength] =
+    useState<PasswordStrength | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showStudentNumber, setShowStudentNumber] = useState(false);
+  const [isStudentNumberAutoDetected, setIsStudentNumberAutoDetected] =
+    useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const extractStudentNumberFromEmail = (email: string): string | null => {
+    if (!email || !email.includes("@")) return null;
+
+    const localPart = email.split("@")[0];
+
+    // Check if the local part starts with numbers
+    const match = localPart.match(/^(\d+)/);
+
+    if (match) {
+      return match[1];
+    }
+
+    return null;
   };
 
-  // Fetch modules from database on component mount
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
+    if (field === "password") {
+      const strength = validatePasswordStrength(value);
+      setPasswordStrength(strength);
+    }
+
+    if (field === "email") {
+      const studentNumber = extractStudentNumberFromEmail(value);
+      if (studentNumber) {
+        setShowStudentNumber(true);
+        setIsStudentNumberAutoDetected(true);
+        setFormData((prev) => ({ ...prev, studentNumber }));
+      } else {
+        setShowStudentNumber(false);
+        setIsStudentNumberAutoDetected(false);
+        setFormData((prev) => ({ ...prev, studentNumber: "" }));
+      }
+    }
+  };
+
   useEffect(() => {
     const fetchModules = async () => {
       try {
@@ -72,8 +123,8 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
+    if (!passwordStrength?.isValid) {
+      setError("Password does not meet security requirements");
       return;
     }
 
@@ -82,7 +133,6 @@ const RegisterPage: React.FC = () => {
     try {
       const success = await register(formData, formData.password);
       if (success) {
-        // Redirect to login page with confirmation message
         navigate("/login", {
           state: {
             message:
@@ -168,7 +218,6 @@ const RegisterPage: React.FC = () => {
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   required
-                  placeholder="577963@student.belgiumcampus.ac.za"
                   helperText="Must use @belgiumcampus.ac.za or @student.belgiumcampus.ac.za email"
                 />
               </Grid>
@@ -176,31 +225,76 @@ const RegisterPage: React.FC = () => {
                 <TextField
                   fullWidth
                   label="Password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) =>
                     handleInputChange("password", e.target.value)
                   }
                   required
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
+                {passwordStrength && (
+                  <PasswordStrengthIndicator
+                    passwordStrength={passwordStrength}
+                    showDetails={true}
+                  />
+                )}
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Confirm Password"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={formData.confirmPassword}
                   onChange={(e) =>
                     handleInputChange("confirmPassword", e.target.value)
                   }
                   required
+                  error={
+                    formData.confirmPassword !== "" &&
+                    formData.password !== formData.confirmPassword
+                  }
+                  helperText={
+                    formData.confirmPassword !== "" &&
+                    formData.password !== formData.confirmPassword
+                      ? "Passwords do not match"
+                      : ""
+                  }
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          edge="end"
+                        >
+                          {showConfirmPassword ? (
+                            <VisibilityOff />
+                          ) : (
+                            <Visibility />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
-              {/* Role selection removed; default to student */}
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Role" value="Student" disabled />
               </Grid>
-              {true && (
+              {showStudentNumber && (
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
@@ -210,6 +304,12 @@ const RegisterPage: React.FC = () => {
                       handleInputChange("studentNumber", e.target.value)
                     }
                     placeholder="BC2023001"
+                    disabled={isStudentNumberAutoDetected}
+                    helperText={
+                      isStudentNumberAutoDetected
+                        ? "Student number automatically detected from email"
+                        : "Enter your student number"
+                    }
                   />
                 </Grid>
               )}
