@@ -33,6 +33,7 @@ import {
   CheckCircle,
   Topic,
   Reply,
+  Quiz,
 } from "@mui/icons-material";
 import { topicsService, TopicWithDetails } from "../services/topicsService";
 import {
@@ -44,6 +45,7 @@ import {
   answerReplyService,
   AnswerReplyWithAuthor,
 } from "../services/answerReplyService";
+import { quizService, TopicQuiz } from "../services/quizService";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -78,12 +80,13 @@ const TopicManagementPage: React.FC = () => {
   const [questions, setQuestions] = useState<QuestionWithDetails[]>([]);
   const [answers, setAnswers] = useState<AnswerWithDetails[]>([]);
   const [replies, setReplies] = useState<AnswerReplyWithAuthor[]>([]);
+  const [quizzes, setQuizzes] = useState<TopicQuiz[]>([]);
 
   // Moderation dialog states
   const [moderationDialogOpen, setModerationDialogOpen] = useState(false);
   const [moderationReason, setModerationReason] = useState("");
   const [moderationTarget, setModerationTarget] = useState<{
-    type: "topic" | "question" | "answer" | "reply";
+    type: "topic" | "question" | "answer" | "reply" | "quiz";
     id: string;
     title: string;
     isModerated: boolean;
@@ -95,18 +98,20 @@ const TopicManagementPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const [topicsData, questionsData, answersData, repliesData] =
+      const [topicsData, questionsData, answersData, repliesData, quizzesData] =
         await Promise.all([
           topicsService.getAllTopicsForModeration(),
           questionsService.getAllQuestionsForModeration(),
           answersService.getAllAnswersForModeration(),
           answerReplyService.getAllAnswerRepliesForModeration(),
+          quizService.getQuizzesForModeration(),
         ]);
 
       setTopics(topicsData);
       setQuestions(questionsData);
       setAnswers(answersData);
       setReplies(repliesData);
+      setQuizzes(quizzesData);
     } catch (err) {
       console.error("Error loading management data:", err);
       setError("Failed to load management data");
@@ -183,9 +188,31 @@ const TopicManagementPage: React.FC = () => {
     };
   };
 
+  const getFilteredQuizzes = () => {
+    const filtered = quizzes.filter(
+      (q) =>
+        q.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (q.description &&
+          q.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (q.created_by_user &&
+          q.created_by_user.first_name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())) ||
+        (q.created_by_user &&
+          q.created_by_user.last_name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()))
+    );
+
+    return {
+      active: filtered.filter((q) => !q.is_moderated),
+      moderated: filtered.filter((q) => q.is_moderated),
+    };
+  };
+
   // Moderation handlers
   const handleModerate = (
-    type: "topic" | "question" | "answer" | "reply",
+    type: "topic" | "question" | "answer" | "reply" | "quiz",
     id: string,
     title: string,
     isModerated: boolean
@@ -231,6 +258,14 @@ const TopicManagementPage: React.FC = () => {
           setReplies((prev) =>
             prev.map((r) =>
               r.id === id ? { ...r, isModerated: !isModerated } : r
+            )
+          );
+          break;
+        case "quiz":
+          await quizService.moderateQuiz(id, !isModerated);
+          setQuizzes((prev) =>
+            prev.map((q) =>
+              q.id === id ? { ...q, is_moderated: !isModerated } : q
             )
           );
           break;
@@ -582,6 +617,95 @@ const TopicManagementPage: React.FC = () => {
     </Card>
   );
 
+  // Render quiz card
+  const renderQuizCard = (quiz: TopicQuiz) => (
+    <Card key={quiz.id} sx={{ mb: 2, opacity: quiz.is_moderated ? 0.6 : 1 }}>
+      <CardContent>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="flex-start"
+          mb={2}
+        >
+          <Typography variant="subtitle1" component="h3" gutterBottom>
+            {quiz.title}
+          </Typography>
+          <Box display="flex" gap={1}>
+            {quiz.is_moderated && (
+              <Chip
+                label="Hidden"
+                color="error"
+                size="small"
+                icon={<VisibilityOff />}
+              />
+            )}
+            <Chip
+              label={`${quiz.questions.length} Questions`}
+              size="small"
+              variant="outlined"
+              color="primary"
+            />
+            {quiz.time_limit && (
+              <Chip
+                label={`${quiz.time_limit} min`}
+                size="small"
+                variant="outlined"
+                color="secondary"
+              />
+            )}
+          </Box>
+        </Box>
+
+        {quiz.description && (
+          <Typography variant="body2" color="text.secondary" paragraph>
+            {quiz.description}
+          </Typography>
+        )}
+
+        <Box display="flex" alignItems="center" gap={2} mb={1}>
+          <Box display="flex" alignItems="center" gap={0.5}>
+            <Person fontSize="small" color="action" />
+            <Typography variant="body2" color="text.secondary">
+              {quiz.created_by_user
+                ? `${quiz.created_by_user.first_name} ${quiz.created_by_user.last_name}`
+                : "Unknown Author"}
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.5}>
+            <Schedule fontSize="small" color="action" />
+            <Typography variant="body2" color="text.secondary">
+              {quiz.created_at.toLocaleDateString()}
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={0.5}>
+            <Quiz fontSize="small" color="action" />
+            <Typography variant="body2" color="text.secondary">
+              Passing: {quiz.passing_score}%
+            </Typography>
+          </Box>
+        </Box>
+      </CardContent>
+
+      <CardActions>
+        <Button
+          size="small"
+          color={quiz.is_moderated ? "success" : "error"}
+          startIcon={quiz.is_moderated ? <Visibility /> : <VisibilityOff />}
+          onClick={() =>
+            handleModerate(
+              "quiz",
+              quiz.id,
+              quiz.title,
+              quiz.is_moderated || false
+            )
+          }
+        >
+          {quiz.is_moderated ? "Restore" : "Hide"}
+        </Button>
+      </CardActions>
+    </Card>
+  );
+
   if (loading) {
     return (
       <Box
@@ -656,6 +780,12 @@ const TopicManagementPage: React.FC = () => {
             label={`Replies (${
               getFilteredReplies().active.length +
               getFilteredReplies().moderated.length
+            })`}
+          />
+          <Tab
+            label={`Quizzes (${
+              getFilteredQuizzes().active.length +
+              getFilteredQuizzes().moderated.length
             })`}
           />
         </Tabs>
@@ -797,6 +927,41 @@ const TopicManagementPage: React.FC = () => {
             </Paper>
           ) : (
             getFilteredReplies().moderated.map(renderReplyCard)
+          )}
+        </Box>
+      </TabPanel>
+
+      {/* Quizzes Tab */}
+      <TabPanel value={activeTab} index={4}>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Active Quizzes ({getFilteredQuizzes().active.length})
+          </Typography>
+          {getFilteredQuizzes().active.length === 0 ? (
+            <Paper sx={{ p: 3, textAlign: "center" }}>
+              <Typography color="text.secondary">
+                No active quizzes found
+              </Typography>
+            </Paper>
+          ) : (
+            getFilteredQuizzes().active.map(renderQuizCard)
+          )}
+        </Box>
+
+        <Divider sx={{ my: 3 }} />
+
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Hidden Quizzes ({getFilteredQuizzes().moderated.length})
+          </Typography>
+          {getFilteredQuizzes().moderated.length === 0 ? (
+            <Paper sx={{ p: 3, textAlign: "center" }}>
+              <Typography color="text.secondary">
+                No hidden quizzes found
+              </Typography>
+            </Paper>
+          ) : (
+            getFilteredQuizzes().moderated.map(renderQuizCard)
           )}
         </Box>
       </TabPanel>

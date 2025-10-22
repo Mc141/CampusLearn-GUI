@@ -186,19 +186,71 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         sx={{
           background:
             theme.palette.mode === "light"
-              ? "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)"
-              : "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)",
+              ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+              : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
           color: "white",
           borderRadius: "0 20px 0 0",
           mb: 2,
+          cursor: "pointer",
+          transition: "all 0.3s ease",
+          "&:hover": {
+            background:
+              theme.palette.mode === "light"
+                ? "linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)"
+                : "linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)",
+          },
         }}
+        onClick={() => navigate("/")}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <img
-            src="/logo.svg"
-            alt="CampusLearn"
-            style={{ height: "32px", filter: "brightness(0) invert(1)" }}
-          />
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%" }}
+        >
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              background: "rgba(255, 255, 255, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+            }}
+          >
+            <School
+              sx={{
+                color: "white",
+                fontSize: 20,
+                fontWeight: "bold",
+              }}
+            />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                color: "white",
+                letterSpacing: "-0.5px",
+                fontSize: "1.1rem",
+              }}
+            >
+              CampusLearn
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "rgba(255, 255, 255, 0.8)",
+                fontSize: "0.65rem",
+                fontWeight: 500,
+                letterSpacing: "0.5px",
+                textTransform: "uppercase",
+              }}
+            >
+              Learning Platform
+            </Typography>
+          </Box>
         </Box>
       </Toolbar>
       <List>
@@ -297,7 +349,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+
+          {/* Page Title */}
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{
+              flexGrow: 1,
+              fontWeight: 600,
+              color:
+                theme.palette.mode === "light"
+                  ? theme.palette.text.primary
+                  : "white",
+            }}
+          >
             {getNavigationItems().find(
               (item) => item.path === location.pathname
             )?.text || "Dashboard"}

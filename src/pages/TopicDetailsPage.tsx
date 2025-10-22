@@ -68,6 +68,7 @@ import AnswerReplies from "../components/AnswerReplies";
 import { answerReplyService } from "../services/answerReplyService";
 import AnswerReplyFileUpload from "../components/AnswerReplyFileUpload";
 import { answerReplyAttachmentService } from "../services/answerReplyAttachmentService";
+import QuizTab from "../components/QuizTab";
 
 const TopicDetailsPage: React.FC = () => {
   const { user } = useAuth();
@@ -635,6 +636,14 @@ const TopicDetailsPage: React.FC = () => {
         <TopicResources
           topicId={topicId}
           canUpload={user?.role === "tutor" || user?.role === "admin"}
+        />
+      </Box>
+
+      {/* Interactive Quizzes */}
+      <Box sx={{ mb: 4 }}>
+        <QuizTab
+          topicId={topicId}
+          canCreateQuiz={user?.role === "tutor" || user?.role === "admin"}
         />
       </Box>
 

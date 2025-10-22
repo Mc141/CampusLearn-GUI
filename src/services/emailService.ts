@@ -1,9 +1,9 @@
 import emailjs from '@emailjs/browser';
 
 // EmailJS configuration
-const EMAILJS_SERVICE_ID = 'service_5ehr2eg';
-const EMAILJS_TEMPLATE_ID = 'template_rbuccsr';
-const EMAILJS_PUBLIC_KEY = 'eg0JHdoYe7btBFjf8';
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 // Initialize EmailJS
 emailjs.init(EMAILJS_PUBLIC_KEY);

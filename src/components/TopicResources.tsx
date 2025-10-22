@@ -32,6 +32,10 @@ import {
   Edit,
   CloudUpload,
   Visibility,
+  PlayArrow,
+  YouTube,
+  VideoLibrary,
+  Link,
 } from "@mui/icons-material";
 import {
   topicResourcesService,
@@ -39,6 +43,7 @@ import {
 } from "../services/topicResourcesService";
 import { useAuth } from "../context/AuthContext";
 import TopicFileUpload from "./TopicFileUpload";
+import VideoLinkDialog from "./VideoLinkDialog";
 
 interface TopicResourcesProps {
   topicId: string;
@@ -56,6 +61,7 @@ const TopicResources: React.FC<TopicResourcesProps> = ({
   const [selectedResource, setSelectedResource] =
     useState<TopicResource | null>(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [videoLinkDialogOpen, setVideoLinkDialogOpen] = useState(false);
 
   // Load resources for the topic
   const loadResources = async () => {
@@ -80,6 +86,10 @@ const TopicResources: React.FC<TopicResourcesProps> = ({
 
   const handleFilesUploaded = (newResources: TopicResource[]) => {
     setResources((prev) => [...newResources, ...prev]);
+  };
+
+  const handleVideoLinkAdded = () => {
+    loadResources(); // Reload resources to include the new video link
   };
 
   const handleDownload = async (resource: TopicResource) => {
@@ -113,6 +123,8 @@ const TopicResources: React.FC<TopicResourcesProps> = ({
         return <Image color="primary" />;
       case "video":
         return <VideoFile color="secondary" />;
+      case "video_link":
+        return <PlayArrow color="secondary" />;
       case "audio":
         return <AudioFile color="success" />;
       case "pdf":
@@ -175,11 +187,21 @@ const TopicResources: React.FC<TopicResourcesProps> = ({
           Learning Resources ({resources.length})
         </Typography>
         {canUpload && user && (
-          <TopicFileUpload
-            topicId={topicId}
-            userId={user.id}
-            onFilesUploaded={handleFilesUploaded}
-          />
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={<PlayArrow />}
+              onClick={() => setVideoLinkDialogOpen(true)}
+              size="small"
+            >
+              Add Video Link
+            </Button>
+            <TopicFileUpload
+              topicId={topicId}
+              userId={user.id}
+              onFilesUploaded={handleFilesUploaded}
+            />
+          </Box>
         )}
       </Box>
 
@@ -228,8 +250,37 @@ const TopicResources: React.FC<TopicResourcesProps> = ({
                             label={resource.type.toUpperCase()}
                             size="small"
                             variant="outlined"
-                            color="primary"
+                            color={
+                              resource.type === "video_link"
+                                ? "secondary"
+                                : "primary"
+                            }
+                            icon={
+                              resource.type === "video_link" ? (
+                                <PlayArrow />
+                              ) : undefined
+                            }
                           />
+                          {resource.video_metadata?.platform && (
+                            <Chip
+                              label={resource.video_metadata.platform.toUpperCase()}
+                              size="small"
+                              variant="filled"
+                              color={
+                                resource.video_metadata.platform === "youtube"
+                                  ? "error"
+                                  : "primary"
+                              }
+                              icon={
+                                resource.video_metadata.platform ===
+                                "youtube" ? (
+                                  <YouTube />
+                                ) : (
+                                  <VideoLibrary />
+                                )
+                              }
+                            />
+                          )}
                         </Box>
                       }
                       secondary={
@@ -401,6 +452,53 @@ const TopicResources: React.FC<TopicResourcesProps> = ({
                   />
                 </Box>
               )}
+              {selectedResource.type === "video_link" && (
+                <Box sx={{ mt: 2 }}>
+                  {selectedResource.video_metadata?.platform === "youtube" && (
+                    <Box sx={{ textAlign: "center" }}>
+                      <iframe
+                        src={selectedResource.url.replace("watch?v=", "embed/")}
+                        width="100%"
+                        height="400px"
+                        style={{ border: "none", borderRadius: "8px" }}
+                        title={selectedResource.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </Box>
+                  )}
+                  {selectedResource.video_metadata?.platform === "vimeo" && (
+                    <Box sx={{ textAlign: "center" }}>
+                      <iframe
+                        src={selectedResource.url.replace(
+                          "vimeo.com/",
+                          "player.vimeo.com/video/"
+                        )}
+                        width="100%"
+                        height="400px"
+                        style={{ border: "none", borderRadius: "8px" }}
+                        title={selectedResource.title}
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </Box>
+                  )}
+                  {selectedResource.video_metadata?.platform === "other" && (
+                    <Box sx={{ textAlign: "center", mt: 2 }}>
+                      <Button
+                        variant="contained"
+                        startIcon={<PlayArrow />}
+                        onClick={() =>
+                          window.open(selectedResource.url, "_blank")
+                        }
+                        size="large"
+                      >
+                        Watch Video
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+              )}
             </Box>
           )}
         </DialogContent>
@@ -417,6 +515,15 @@ const TopicResources: React.FC<TopicResourcesProps> = ({
           )}
         </DialogActions>
       </Dialog>
+
+      {/* Video Link Dialog */}
+      <VideoLinkDialog
+        open={videoLinkDialogOpen}
+        onClose={() => setVideoLinkDialogOpen(false)}
+        onSuccess={handleVideoLinkAdded}
+        topicId={topicId}
+        userId={user?.id || ""}
+      />
     </Box>
   );
 };

@@ -6,7 +6,7 @@ export interface TopicResource {
   id: string;
   title: string;
   description?: string;
-  type: 'pdf' | 'video' | 'audio' | 'image' | 'link' | 'document' | 'presentation' | 'spreadsheet' | 'text';
+  type: 'pdf' | 'video' | 'video_link' | 'audio' | 'image' | 'link' | 'document' | 'presentation' | 'spreadsheet' | 'text';
   url: string;
   file_name?: string;
   file_path?: string;
@@ -19,6 +19,12 @@ export interface TopicResource {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+  video_metadata?: {
+    title?: string;
+    duration?: string;
+    thumbnail?: string;
+    platform?: 'youtube' | 'vimeo' | 'other';
+  };
   // Additional fields for display
   uploaded_by_user?: {
     id: string;
@@ -31,9 +37,15 @@ export interface TopicResource {
 export interface CreateTopicResourceData {
   title: string;
   description?: string;
-  type: 'pdf' | 'video' | 'audio' | 'image' | 'link' | 'document' | 'presentation' | 'spreadsheet' | 'text';
-  url?: string; // For links
+  type: 'pdf' | 'video' | 'video_link' | 'audio' | 'image' | 'link' | 'document' | 'presentation' | 'spreadsheet' | 'text';
+  url?: string; // For links and video links
   tags?: string[];
+  video_metadata?: {
+    title?: string;
+    duration?: string;
+    thumbnail?: string;
+    platform?: 'youtube' | 'vimeo' | 'other';
+  };
 }
 
 export interface UploadProgress {
@@ -155,7 +167,73 @@ export const topicResourcesService = {
     }
   },
 
-  // Create a resource record (for uploaded files or links)
+  // Create a video link resource
+  async createVideoLinkResource(
+    topicId: string,
+    videoUrl: string,
+    title: string,
+    description: string,
+    userId: string
+  ): Promise<TopicResource> {
+    try {
+      // Detect video platform and extract metadata
+      const videoInfo = this.extractVideoInfo(videoUrl);
+      
+      const resourceData: CreateTopicResourceData = {
+        title: title || videoInfo.title || 'Video Resource',
+        description: description || `Video link: ${videoUrl}`,
+        type: 'video_link',
+        url: videoUrl,
+        video_metadata: videoInfo,
+        tags: []
+      };
+
+      return await this.createResource(resourceData, topicId, userId, videoUrl);
+    } catch (error) {
+      console.error('Error creating video link resource:', error);
+      throw error;
+    }
+  },
+
+  // Extract video information from URL
+  extractVideoInfo(url: string): {
+    title?: string;
+    duration?: string;
+    thumbnail?: string;
+    platform: 'youtube' | 'vimeo' | 'other';
+  } {
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const vimeoRegex = /vimeo\.com\/(?:.*#|.*\/videos\/)?([0-9]+)/;
+    
+    if (youtubeRegex.test(url)) {
+      const match = url.match(youtubeRegex);
+      const videoId = match ? match[1] : '';
+      return {
+        platform: 'youtube',
+        thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+        title: 'YouTube Video'
+      };
+    } else if (vimeoRegex.test(url)) {
+      return {
+        platform: 'vimeo',
+        title: 'Vimeo Video'
+      };
+    } else {
+      return {
+        platform: 'other',
+        title: 'Video Link'
+      };
+    }
+  },
+
+  // Validate video URL
+  isValidVideoUrl(url: string): boolean {
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+    const vimeoRegex = /^(https?:\/\/)?(www\.)?vimeo\.com\/.+/;
+    const otherVideoRegex = /\.(mp4|webm|ogg|avi|mov|wmv|flv|mkv)$/i;
+    
+    return youtubeRegex.test(url) || vimeoRegex.test(url) || otherVideoRegex.test(url);
+  },
   async createResource(
     resourceData: CreateTopicResourceData,
     topicId: string,
@@ -193,6 +271,7 @@ export const topicResourcesService = {
           uploaded_by: userId,
           size: fileSize,
           tags: resourceData.tags || [],
+          video_metadata: resourceData.video_metadata || null,
           is_active: true
         }])
         .select(`
@@ -343,6 +422,7 @@ export const topicResourcesService = {
       is_active: data.is_active !== false, // Default to true
       created_at: data.created_at ? new Date(data.created_at) : new Date(),
       updated_at: data.updated_at ? new Date(data.updated_at) : new Date(),
+      video_metadata: data.video_metadata || undefined,
       uploaded_by_user: data.uploaded_by_user ? {
         id: data.uploaded_by_user.id,
         first_name: data.uploaded_by_user.first_name,

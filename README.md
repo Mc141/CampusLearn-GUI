@@ -1,215 +1,193 @@
-# CampusLearn™ Frontend
+# CampusLearn
 
-A comprehensive peer-powered learning platform frontend built with React, TypeScript, and Material UI 3.
+A comprehensive peer-to-peer learning platform designed for Belgium Campus students, featuring AI-powered assistance, interactive quizzes, and collaborative learning tools.
 
 ## Features
 
-### 🎓 Multi-Role Support
+### Core Learning Platform
 
-- **Student Dashboard**: Profile management, topic subscription, question asking
-- **Tutor Dashboard**: Topic management, question answering, student interaction
-- **Admin Dashboard**: Platform management, user oversight, analytics
+- **Student Registration & Profiles**: Complete user management with academic background tracking
+- **Topic Management**: Create and subscribe to learning topics with module-specific organization
+- **Peer Tutoring System**: Connect students with qualified tutors for personalized assistance
+- **Interactive Quizzes**: Create and take quizzes with multiple question types (multiple choice, true/false, fill-in-the-blank)
+- **Resource Management**: Upload and organize learning materials including PDFs, videos, and documents
 
-### 💬 Communication Systems
+### Communication & Collaboration
 
-- **Public Forum**: Anonymous posting with moderation capabilities
+- **Public Forum**: Anonymous academic discussions with moderation capabilities
 - **Private Messaging**: One-on-one communication between students and tutors
-- **AI Chatbot**: 24/7 AI assistant with Microsoft Copilot Studio integration
-- **Notifications**: Multi-channel notifications (Email, SMS, WhatsApp)
+- **Real-time Chat**: Instant messaging with file attachments and notifications
+- **AI Chatbot Assistant**: 24/7 intelligent support with escalation to human tutors
 
-### 📚 Learning Management
+### Administrative Tools
 
-- **Topic Management**: Create, subscribe, and manage learning topics
-- **Question & Answer System**: Ask questions, get answers from peer tutors
-- **File Management**: Upload and share learning materials (PDFs, videos, audio)
-- **Progress Tracking**: Monitor learning progress and engagement
+- **User Management**: Admin controls for user roles, banning, and account management
+- **Content Moderation**: Comprehensive moderation system for all platform content
+- **Analytics Dashboard**: Track platform usage, user engagement, and learning outcomes
+- **FAQ Management**: Dynamic FAQ system with view tracking and feedback collection
 
-### 🔧 Technical Features
+### Advanced Features
 
-- **Responsive Design**: Mobile-friendly interface
-- **Real-time Updates**: Live notifications and messaging
-- **File Upload**: Drag-and-drop file upload with progress tracking
-- **Search & Filter**: Advanced search and filtering capabilities
-- **Role-based Access**: Secure access control based on user roles
+- **Chat Expiry System**: Automatic cleanup of inactive conversations after 7 days
+- **Notification System**: Real-time notifications for messages, assignments, and updates
+- **File Upload System**: Secure file handling with progress tracking and validation
+- **Theme Support**: Light and dark mode with responsive design
+- **Mobile Responsive**: Optimized for all device sizes and screen resolutions
 
-## Tech Stack
+## Technology Stack
 
-- **Frontend**: React 18 + TypeScript
-- **UI Framework**: Material UI 3 (MUI)
-- **Routing**: React Router DOM
-- **State Management**: React Context API
-- **Build Tool**: Vite
-- **File Upload**: React Dropzone
-- **Charts**: Recharts
-- **Forms**: React Hook Form + Yup validation
+### Frontend
+
+- **React 18** with TypeScript
+- **Material-UI (MUI)** for component library
+- **React Router** for navigation
+- **Vite** for build tooling and development server
+
+### Backend & Database
+
+- **Supabase** for backend-as-a-service
+- **PostgreSQL** database with Row Level Security (RLS)
+- **Supabase Storage** for file uploads and management
+- **Supabase Realtime** for live updates and notifications
+
+### AI & Automation
+
+- **Microsoft Copilot Studio** for AI chatbot integration
+- **Supabase Edge Functions** for serverless automation
+- **Scheduled Functions** for automated cleanup and maintenance
+
+### Deployment & Infrastructure
+
+- **Netlify** for frontend hosting
+- **Supabase Cloud** for database and backend services
+- **GitHub Actions** for CI/CD pipeline
+- **Render** for additional services
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 16+
-- npm or yarn
+- Node.js 18+ and npm
+- Supabase account and project
+- Git for version control
 
 ### Installation
 
-1. Clone the repository
+1. Clone the repository:
 
 ```bash
-git clone <repository-url>
-cd campuslearn-frontend
+git clone https://github.com/your-username/CampusLearn-GUI.git
+cd CampusLearn-GUI
 ```
 
-2. Install dependencies
+2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Start the development server
+3. Set up environment variables:
+
+```bash
+cp .env.example .env.local
+```
+
+4. Configure Supabase:
+
+   - Create a new Supabase project
+   - Update environment variables with your Supabase URL and API keys
+   - Run the database migrations
+
+5. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-4. Open your browser and navigate to `http://localhost:3000`
+### Environment Variables
 
-### Demo Accounts
+Create a `.env.local` file with the following variables:
 
-The application includes demo accounts for testing:
-
-- **Student**: `student@belgiumcampus.ac.za` / `password`
-- **Tutor**: `tutor@belgiumcampus.ac.za` / `password`
-- **Admin**: `admin@belgiumcampus.ac.za` / `password`
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
 ## Project Structure
 
 ```
 src/
 ├── components/          # Reusable UI components
-│   ├── Layout.tsx      # Main application layout
-│   ├── FileUpload.tsx  # File upload component
-│   └── NotificationCenter.tsx # Notification system
-├── pages/              # Page components
-│   ├── LoginPage.tsx   # Authentication pages
-│   ├── RegisterPage.tsx
-│   ├── StudentDashboard.tsx
-│   ├── TutorDashboard.tsx
-│   ├── AdminDashboard.tsx
-│   ├── ForumPage.tsx   # Public forum
-│   ├── MessagesPage.tsx # Private messaging
-│   ├── ProfilePage.tsx # User profile management
-│   ├── TopicsPage.tsx  # Topic management
-│   ├── QuestionsPage.tsx # Q&A system
-│   └── ChatbotPage.tsx # AI assistant
-├── context/            # React Context providers
-│   └── AuthContext.tsx # Authentication context
-├── data/               # Mock data and constants
-│   └── mockData.ts     # Sample data for development
-├── types/              # TypeScript type definitions
-│   └── index.ts        # Application types
+├── context/            # React context providers
 ├── hooks/              # Custom React hooks
-├── utils/              # Utility functions
-├── App.tsx             # Main application component
-└── main.tsx            # Application entry point
+├── lib/                # External library configurations
+├── pages/              # Page components
+├── services/           # API and business logic
+├── types/              # TypeScript type definitions
+└── utils/              # Utility functions
 ```
 
-## Key Features Implementation
+## Key Components
 
-### Authentication System
+### Authentication
 
-- Role-based authentication (Student/Tutor/Admin)
-- Email validation for @belgiumcampus.ac.za domain
-- Persistent sessions with localStorage
-- Protected routes based on user roles
+- Role-based access control (Student, Tutor, Admin)
+- Email-based registration with Belgium Campus domain validation
+- Secure session management with automatic logout for banned users
 
-### Dashboard System
+### Learning Management
 
-- **Student**: View stats, recent questions, subscribed topics, notifications
-- **Tutor**: Manage topics, answer questions, track responses, student interactions
-- **Admin**: User management, platform analytics, system oversight
+- Topic creation and subscription system
+- Tutor assignment and matching
+- Interactive quiz creation and taking
+- Resource upload and organization
 
-### Forum System
+### Communication
 
-- Anonymous posting capabilities
-- Moderation tools for admins
-- Trending topics and popular tags
-- Search and filtering functionality
+- Real-time messaging with file attachments
+- Public forum with moderation tools
+- AI chatbot with intelligent escalation
+- Comprehensive notification system
 
-### Messaging System
+### Administration
 
-- Real-time chat interface
-- File attachments support
-- Conversation management
-- Read/unread status tracking
+- User management and role assignment
+- Content moderation across all platform areas
+- Analytics and reporting dashboard
+- System maintenance and cleanup tools
 
-### AI Chatbot
+## Database Schema
 
-- Intelligent responses based on context
-- Quick action buttons
-- Suggestion system
-- Feedback mechanism
+The application uses a comprehensive PostgreSQL schema with the following main entities:
 
-### File Management
-
-- Drag-and-drop upload
-- Multiple file format support
-- Progress tracking
-- File type validation
-
-### Notification System
-
-- Multi-channel notifications (Email, SMS, WhatsApp)
-- Real-time updates
-- Notification center
-- Mark as read functionality
-
-## Responsive Design
-
-The application is fully responsive and optimized for:
-
-- Desktop (1200px+)
-- Tablet (768px - 1199px)
-- Mobile (320px - 767px)
-
-## Development
-
-### Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-
-### Code Quality
-
-- TypeScript for type safety
-- ESLint for code linting
-- Material UI for consistent design
-- Responsive design principles
-
-## Backend Integration
-
-The frontend is designed to easily integrate with a backend API. Key integration points:
-
-- Authentication endpoints
-- User management
-- File upload/storage
-- Real-time messaging
-- Notification services
-- AI chatbot integration
+- **Users**: Student, tutor, and admin accounts with profile information
+- **Topics**: Learning subjects with module associations
+- **Questions & Answers**: Q&A system with attachments and replies
+- **Messages**: Private communication between users
+- **Forum**: Public discussions with moderation
+- **Quizzes**: Interactive exercises with multiple question types
+- **Resources**: File uploads and learning materials
+- **Notifications**: System alerts and updates
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
+2. Create a feature branch: `git checkout -b feature-name`
+3. Commit changes: `git commit -m 'Add feature'`
+4. Push to branch: `git push origin feature-name`
 5. Submit a pull request
 
 ## License
 
-This project is part of the CampusLearn™ platform for Belgium Campus.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Support
 
-For support and questions, please contact the development team.
+For support and questions, please contact the development team or create an issue in the repository.
+
+## Acknowledgments
+
+- Belgium Campus for providing the project requirements and hosting support
+- Supabase for backend infrastructure
+- Material-UI for the component library
+- The React community for excellent documentation and tools
