@@ -182,7 +182,7 @@ const NestedReply: React.FC<NestedReplyProps> = ({
         </Typography>
 
         {/* Reply Attachments */}
-        <ForumAttachments replyId={reply.id} />
+        <ForumAttachments replyId={reply.id} canDelete={false} />
 
         {/* Reply Actions */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

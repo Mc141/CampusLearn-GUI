@@ -167,6 +167,18 @@ export const messagingService = {
   // Send a message
   async sendMessage(data: CreateMessageData): Promise<Message> {
     try {
+      console.log("Sending message with data:", data);
+      
+      // Validate that sender and receiver are different
+      if (data.senderId === data.receiverId) {
+        throw new Error("Cannot send message to yourself");
+      }
+      
+      // Validate required fields
+      if (!data.senderId || !data.receiverId || !data.content) {
+        throw new Error("Missing required fields: senderId, receiverId, or content");
+      }
+      
       const { data: message, error } = await supabase
         .from('messages')
         .insert([
@@ -182,6 +194,7 @@ export const messagingService = {
 
       if (error) {
         console.error('Error sending message:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         throw error;
       }
 

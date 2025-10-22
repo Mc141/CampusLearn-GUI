@@ -264,7 +264,7 @@ const QuizTakingInterface: React.FC<QuizTakingInterfaceProps> = ({
               {currentQuestion.type === "multiple_choice" && (
                 <FormControl component="fieldset">
                   <RadioGroup
-                    value={answers[currentQuestion.id] || ""}
+                    value={answers[currentQuestion.id]?.toString() || ""}
                     onChange={(e) =>
                       handleAnswerChange(
                         currentQuestion.id,
@@ -275,7 +275,7 @@ const QuizTakingInterface: React.FC<QuizTakingInterfaceProps> = ({
                     {currentQuestion.options?.map((option, index) => (
                       <FormControlLabel
                         key={index}
-                        value={index}
+                        value={index.toString()}
                         control={<Radio />}
                         label={option}
                       />
@@ -287,7 +287,7 @@ const QuizTakingInterface: React.FC<QuizTakingInterfaceProps> = ({
               {currentQuestion.type === "true_false" && (
                 <FormControl component="fieldset">
                   <RadioGroup
-                    value={answers[currentQuestion.id] || ""}
+                    value={answers[currentQuestion.id]?.toString() || ""}
                     onChange={(e) =>
                       handleAnswerChange(
                         currentQuestion.id,

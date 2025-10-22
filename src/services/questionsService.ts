@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { Question, User } from '../types';
+import { topicSubscriptionService } from './topicSubscriptionService';
 
 export interface CreateQuestionData {
   title: string;
@@ -52,6 +53,7 @@ export const questionsService = {
             is_accepted,
             upvotes,
             created_at,
+            is_moderated,
             tutor:users!answers_tutor_id_fkey(
               id,
               first_name,
@@ -61,6 +63,7 @@ export const questionsService = {
           )
         `)
         .eq('topic_id', topicId)
+        .eq('is_moderated', false)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -86,7 +89,7 @@ export const questionsService = {
           lastName: question.student.last_name,
           email: question.student.email,
         },
-        answers: question.answers.map(answer => ({
+        answers: question.answers.filter(answer => !answer.is_moderated).map(answer => ({
           id: answer.id,
           content: answer.content,
           tutor: {
@@ -99,7 +102,7 @@ export const questionsService = {
           upvotes: answer.upvotes,
           createdAt: new Date(answer.created_at),
         })),
-        answerCount: question.answers.length,
+        answerCount: question.answers.filter(answer => !answer.is_moderated).length,
       }));
     } catch (error) {
       console.error('Error in getQuestionsByTopic:', error);
@@ -132,7 +135,7 @@ export const questionsService = {
         throw error;
       }
 
-      return {
+      const question = {
         id: data.id,
         topicId: data.topic_id,
         studentId: data.student_id,
@@ -145,6 +148,32 @@ export const questionsService = {
         createdAt: new Date(data.created_at),
         updatedAt: new Date(data.updated_at),
       };
+
+      // Send notifications to topic subscribers
+      try {
+        // Get student name for notification
+        const { data: studentData } = await supabase
+          .from('users')
+          .select('first_name, last_name')
+          .eq('id', studentId)
+          .single();
+
+        if (studentData) {
+          const authorName = questionData.isAnonymous ? 'Anonymous' : `${studentData.first_name} ${studentData.last_name}`;
+          
+          await topicSubscriptionService.notifyNewQuestion(
+            topicId,
+            questionData.title,
+            authorName,
+            data.id
+          );
+        }
+      } catch (notificationError) {
+        console.error('Error sending topic subscription notifications:', notificationError);
+        // Don't fail the question creation if notification fails
+      }
+
+      return question;
     } catch (error) {
       console.error('Error in createQuestion:', error);
       throw error;
@@ -265,7 +294,8 @@ export const questionsService = {
             ),
             is_accepted,
             upvotes,
-            created_at
+            created_at,
+            is_moderated
           ),
           topic:topics(
             id,
@@ -298,7 +328,7 @@ export const questionsService = {
           lastName: question.student.last_name,
           email: question.student.email,
         },
-        answers: question.answers.map(answer => ({
+        answers: question.answers.filter(answer => !answer.is_moderated).map(answer => ({
           id: answer.id,
           content: answer.content,
           tutor: {
@@ -311,7 +341,7 @@ export const questionsService = {
           upvotes: answer.upvotes,
           createdAt: new Date(answer.created_at),
         })),
-        answerCount: question.answers.length,
+        answerCount: question.answers.filter(answer => !answer.is_moderated).length,
       }));
     } catch (error) {
       console.error('Error in getQuestionsByStudent:', error);
@@ -343,7 +373,8 @@ export const questionsService = {
             ),
             is_accepted,
             upvotes,
-            created_at
+            created_at,
+            is_moderated
           ),
           topic:topics(
             id,
@@ -375,7 +406,7 @@ export const questionsService = {
           lastName: question.student.last_name,
           email: question.student.email,
         },
-        answers: question.answers.map(answer => ({
+        answers: question.answers.filter(answer => !answer.is_moderated).map(answer => ({
           id: answer.id,
           content: answer.content,
           tutor: {
@@ -388,7 +419,7 @@ export const questionsService = {
           upvotes: answer.upvotes,
           createdAt: new Date(answer.created_at),
         })),
-        answerCount: question.answers.length,
+        answerCount: question.answers.filter(answer => !answer.is_moderated).length,
         isModerated: question.is_moderated || false,
       }));
     } catch (error) {
@@ -439,7 +470,8 @@ export const questionsService = {
             ),
             is_accepted,
             upvotes,
-            created_at
+            created_at,
+            is_moderated
           ),
           topic:topics(
             id,
@@ -471,7 +503,7 @@ export const questionsService = {
           lastName: question.student.last_name,
           email: question.student.email,
         },
-        answers: question.answers.map(answer => ({
+        answers: question.answers.filter(answer => !answer.is_moderated).map(answer => ({
           id: answer.id,
           content: answer.content,
           tutor: {
@@ -484,7 +516,7 @@ export const questionsService = {
           upvotes: answer.upvotes,
           createdAt: new Date(answer.created_at),
         })),
-        answerCount: question.answers.length,
+        answerCount: question.answers.filter(answer => !answer.is_moderated).length,
         isModerated: question.is_moderated || false,
       }));
     } catch (error) {

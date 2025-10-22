@@ -301,6 +301,7 @@ export const forumService = {
       };
 
       // Create notification for the post author (if not replying to their own post)
+      // Also notify parent reply author if this is a nested reply
       try {
         if (authorId) {
           // Get post details to find the author
@@ -310,17 +311,40 @@ export const forumService = {
             .eq('id', replyData.postId)
             .single();
 
-          if (postData && postData.author_id !== authorId) {
-            // Get replier's name
-            const { data: replierData } = await supabase
-              .from('users')
-              .select('first_name, last_name')
-              .eq('id', authorId)
-              .single();
+          // Get replier's name
+          const { data: replierData } = await supabase
+            .from('users')
+            .select('first_name, last_name')
+            .eq('id', authorId)
+            .single();
 
-            if (replierData) {
-              const replierName = replyData.isAnonymous ? 'Anonymous' : `${replierData.first_name} ${replierData.last_name}`;
+          if (replierData) {
+            const replierName = replyData.isAnonymous ? 'Anonymous' : `${replierData.first_name} ${replierData.last_name}`;
+
+            // Notify post author (if not replying to their own post)
+            if (postData && postData.author_id !== authorId) {
               await notificationService.notifyForumReply(postData.author_id, replierName, postData.title, replyData.postId);
+            }
+
+            // Notify parent reply author if this is a nested reply
+            if (replyData.parentReplyId) {
+              const { data: parentReplyData } = await supabase
+                .from('forum_replies')
+                .select('author_id')
+                .eq('id', replyData.parentReplyId)
+                .single();
+
+              if (parentReplyData && parentReplyData.author_id !== authorId) {
+                // Create notification for parent reply author
+                await notificationService.createNotification({
+                  userId: parentReplyData.author_id,
+                  type: 'forum_reply',
+                  title: 'New Reply to Your Comment',
+                  message: `${replierName} replied to your comment on "${postData?.title || 'a forum post'}"`,
+                  link: `/forum/post/${replyData.postId}`,
+                  relatedEntityId: replyData.parentReplyId
+                });
+              }
             }
           }
         }

@@ -7,14 +7,12 @@ import {
   Button,
   TextField,
   Grid,
-  Avatar,
   Divider,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
   Chip,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -33,18 +31,14 @@ import {
   Save,
   Cancel,
   Person,
-  Email,
   School,
   Assignment,
-  TrendingUp,
   CheckCircle,
   GitHub,
   Language,
   LocationOn,
   Business,
-  Description,
   Notifications,
-  NotificationsOff,
   QuestionAnswer,
   Reply,
 } from "@mui/icons-material";
@@ -56,6 +50,10 @@ import {
   userActivityService,
   UserActivity,
 } from "../services/userActivityService";
+import {
+  tutorModuleService,
+  TutorModuleInfo,
+} from "../services/tutorModuleService";
 import ProfilePictureUpload from "../components/ProfilePictureUpload";
 
 const ProfilePage: React.FC = () => {
@@ -99,6 +97,9 @@ const ProfilePage: React.FC = () => {
   const [openModuleDialog, setOpenModuleDialog] = useState(false);
   const [modules, setModules] = useState<Module[]>([]);
   const [modulesLoading, setModulesLoading] = useState(false);
+  const [tutorModuleInfo, setTutorModuleInfo] =
+    useState<TutorModuleInfo | null>(null);
+  const [tutorModuleLoading, setTutorModuleLoading] = useState(false);
 
   // Load modules from database
   useEffect(() => {
@@ -116,6 +117,27 @@ const ProfilePage: React.FC = () => {
 
     loadModules();
   }, []);
+
+  // Load tutor module information if user is a tutor
+  useEffect(() => {
+    const loadTutorModuleInfo = async () => {
+      if (user?.role === "tutor" && user?.id) {
+        try {
+          setTutorModuleLoading(true);
+          const tutorInfo = await tutorModuleService.getTutorModuleInfo(
+            user.id
+          );
+          setTutorModuleInfo(tutorInfo);
+        } catch (error) {
+          console.error("Error loading tutor module info:", error);
+        } finally {
+          setTutorModuleLoading(false);
+        }
+      }
+    };
+
+    loadTutorModuleInfo();
+  }, [user?.id, user?.role]);
 
   // Load user activity and stats
   useEffect(() => {
@@ -441,9 +463,9 @@ const ProfilePage: React.FC = () => {
                     }}
                   >
                     <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                      Modules
+                      {user?.role === "tutor" ? "Tutor Modules" : "Modules"}
                     </Typography>
-                    {isEditing && (
+                    {isEditing && user?.role !== "tutor" && (
                       <Button
                         size="small"
                         onClick={() => setOpenModuleDialog(true)}
@@ -452,19 +474,136 @@ const ProfilePage: React.FC = () => {
                       </Button>
                     )}
                   </Box>
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                    {profileData.modules.map((moduleId) => {
-                      const module = modules.find((m) => m.id === moduleId);
-                      return (
-                        <Chip
-                          key={moduleId}
-                          label={module?.code || moduleId}
-                          color="primary"
-                          variant="outlined"
-                        />
-                      );
-                    })}
-                  </Box>
+
+                  {user?.role === "tutor" ? (
+                    // Tutor module display
+                    <Box>
+                      {tutorModuleLoading ? (
+                        <Box display="flex" justifyContent="center" p={2}>
+                          <CircularProgress size={24} />
+                        </Box>
+                      ) : tutorModuleInfo ? (
+                        <Box>
+                          {/* Application Status */}
+                          {tutorModuleInfo.applicationStatus && (
+                            <Box mb={2}>
+                              <Chip
+                                label={`Application Status: ${tutorModuleInfo.applicationStatus.toUpperCase()}`}
+                                color={
+                                  tutorModuleInfo.applicationStatus ===
+                                  "approved"
+                                    ? "success"
+                                    : tutorModuleInfo.applicationStatus ===
+                                      "pending"
+                                    ? "warning"
+                                    : tutorModuleInfo.applicationStatus ===
+                                      "rejected"
+                                    ? "error"
+                                    : "default"
+                                }
+                                variant="outlined"
+                                sx={{ mb: 1 }}
+                              />
+                            </Box>
+                          )}
+
+                          {/* Applied Modules */}
+                          {tutorModuleInfo.appliedModules.length > 0 && (
+                            <Box mb={2}>
+                              <Typography
+                                variant="subtitle2"
+                                color="text.secondary"
+                                gutterBottom
+                              >
+                                Applied Modules (
+                                {tutorModuleInfo.appliedModules.length})
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 1,
+                                }}
+                              >
+                                {tutorModuleInfo.appliedModules.map(
+                                  (module) => (
+                                    <Chip
+                                      key={module.id}
+                                      label={`${module.code} - ${module.name}`}
+                                      color="primary"
+                                      variant="outlined"
+                                      size="small"
+                                    />
+                                  )
+                                )}
+                              </Box>
+                            </Box>
+                          )}
+
+                          {/* Assigned Modules */}
+                          {tutorModuleInfo.assignedModules.length > 0 && (
+                            <Box mb={2}>
+                              <Typography
+                                variant="subtitle2"
+                                color="text.secondary"
+                                gutterBottom
+                              >
+                                Assigned Modules (
+                                {tutorModuleInfo.assignedModules.length})
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 1,
+                                }}
+                              >
+                                {tutorModuleInfo.assignedModules.map(
+                                  (module) => (
+                                    <Chip
+                                      key={module.id}
+                                      label={`${module.code} - ${module.name}`}
+                                      color="success"
+                                      variant="filled"
+                                      size="small"
+                                      icon={<CheckCircle />}
+                                    />
+                                  )
+                                )}
+                              </Box>
+                            </Box>
+                          )}
+
+                          {/* No modules message */}
+                          {tutorModuleInfo.appliedModules.length === 0 && (
+                            <Typography variant="body2" color="text.secondary">
+                              No modules applied for yet. Visit the Tutor
+                              Application page to apply for modules.
+                            </Typography>
+                          )}
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No tutor application found.
+                        </Typography>
+                      )}
+                    </Box>
+                  ) : (
+                    // Student module display
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      {profileData.modules.map((moduleId) => {
+                        const module = modules.find((m) => m.id === moduleId);
+                        return (
+                          <Chip
+                            key={moduleId}
+                            label={module?.code || moduleId}
+                            color="primary"
+                            variant="outlined"
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
                 </Grid>
               </Grid>
             </CardContent>

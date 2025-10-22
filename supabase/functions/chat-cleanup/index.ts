@@ -15,11 +15,32 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    // Validate environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing required environment variables')
+      return new Response(
+        JSON.stringify({ 
+          error: 'Missing required environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Create Supabase client with service role key
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+
+    console.log('Starting chat cleanup process...')
 
     // Call the cleanup function
     const { data, error } = await supabaseClient.rpc('cleanup_expired_chats')
@@ -27,7 +48,11 @@ Deno.serve(async (req) => {
     if (error) {
       console.error('Error cleaning up expired chats:', error)
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ 
+          error: error.message,
+          details: error.details,
+          hint: error.hint
+        }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -36,13 +61,14 @@ Deno.serve(async (req) => {
     }
 
     const deletedCount = data || 0
-    console.log(`Cleaned up ${deletedCount} expired conversations`)
+    console.log(`Successfully cleaned up ${deletedCount} expired conversations`)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         deletedCount,
-        message: `Cleaned up ${deletedCount} expired conversations`
+        message: `Cleaned up ${deletedCount} expired conversations`,
+        timestamp: new Date().toISOString()
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -52,7 +78,11 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Internal server error',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -61,23 +91,3 @@ Deno.serve(async (req) => {
   }
 })
 
-/* 
-To deploy this function:
-
-1. Create a new Supabase Edge Function:
-   supabase functions new chat-cleanup
-
-2. Replace the generated code with this file content
-
-3. Deploy the function:
-   supabase functions deploy chat-cleanup
-
-4. Set up a cron job to call this function daily:
-   - Go to Supabase Dashboard > Edge Functions
-   - Add a cron trigger for daily execution
-   - Or use external cron service to call the function URL
-
-5. Test manually:
-   curl -X POST https://your-project.supabase.co/functions/v1/chat-cleanup \
-     -H "Authorization: Bearer YOUR_ANON_KEY"
-*/

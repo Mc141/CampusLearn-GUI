@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { topicAutoAssignmentService } from './topicAutoAssignmentService';
 import { Topic } from '../types';
 
 export interface CreateTopicData {
@@ -70,6 +71,7 @@ export const topicsService = {
           subscribers: [], // Will be populated separately if needed
           tutors: [], // Will be populated separately if needed
           isActive: topic.is_active,
+          isModerated: topic.is_moderated || false,
           createdByUser: {
             id: topic.created_by_user.id,
             firstName: topic.created_by_user.first_name,
@@ -141,6 +143,7 @@ export const topicsService = {
           subscribers: [],
           tutors: [],
           isActive: topic.is_active,
+          isModerated: topic.is_moderated || false,
           createdByUser: {
             id: topic.created_by_user.id,
             firstName: topic.created_by_user.first_name,
@@ -190,7 +193,7 @@ export const topicsService = {
         throw error;
       }
 
-      return {
+      const topic = {
         id: data.id,
         title: data.title,
         description: data.description,
@@ -201,6 +204,16 @@ export const topicsService = {
         tutors: [],
         isActive: data.is_active,
       };
+
+      // Auto-assign approved tutors for this module to the new topic
+      try {
+        await topicAutoAssignmentService.autoAssignTutorsToTopic(data.id, data.module_code);
+      } catch (autoAssignError) {
+        console.error('Error auto-assigning tutors to topic:', autoAssignError);
+        // Don't fail topic creation if auto-assignment fails
+      }
+
+      return topic;
     } catch (error) {
       console.error('Error in createTopic:', error);
       throw error;
@@ -302,39 +315,41 @@ export const topicsService = {
 
       const modulesMap = new Map(modulesData?.map(m => [m.code, m]) || []);
 
-      return data.map(subscription => {
-        const module = modulesMap.get(subscription.topic.module_code);
-        return {
-          id: subscription.topic.id,
-          title: subscription.topic.title,
-          description: subscription.topic.description,
-          moduleCode: subscription.topic.module_code,
-          createdBy: subscription.topic.created_by,
-          createdAt: new Date(subscription.topic.created_at),
-          subscribers: [],
-          tutors: [],
-          isActive: subscription.topic.is_active,
-          createdByUser: {
-            id: subscription.topic.created_by_user.id,
-            firstName: subscription.topic.created_by_user.first_name,
-            lastName: subscription.topic.created_by_user.last_name,
-            email: subscription.topic.created_by_user.email,
-          },
-          moduleDetails: module ? {
-            id: module.id,
-            name: module.name,
-            code: module.code,
-            level: module.level,
-          } : {
-            id: '',
-            name: subscription.topic.module_code,
-            code: subscription.topic.module_code,
-            level: 'Unknown',
-          },
-          subscriberCount: subscription.topic.subscriptions?.[0]?.count || 0,
-          tutorCount: subscription.topic.tutors?.[0]?.count || 0,
-        };
-      });
+      return data
+        .filter(subscription => !subscription.topic.is_moderated)
+        .map(subscription => {
+          const module = modulesMap.get(subscription.topic.module_code);
+          return {
+            id: subscription.topic.id,
+            title: subscription.topic.title,
+            description: subscription.topic.description,
+            moduleCode: subscription.topic.module_code,
+            createdBy: subscription.topic.created_by,
+            createdAt: new Date(subscription.topic.created_at),
+            subscribers: [],
+            tutors: [],
+            isActive: subscription.topic.is_active,
+            createdByUser: {
+              id: subscription.topic.created_by_user.id,
+              firstName: subscription.topic.created_by_user.first_name,
+              lastName: subscription.topic.created_by_user.last_name,
+              email: subscription.topic.created_by_user.email,
+            },
+            moduleDetails: module ? {
+              id: module.id,
+              name: module.name,
+              code: module.code,
+              level: module.level,
+            } : {
+              id: '',
+              name: subscription.topic.module_code,
+              code: subscription.topic.module_code,
+              level: 'Unknown',
+            },
+            subscriberCount: subscription.topic.subscriptions?.[0]?.count || 0,
+            tutorCount: subscription.topic.tutors?.[0]?.count || 0,
+          };
+        });
     } catch (error) {
       console.error('Error in getUserSubscribedTopics:', error);
       throw error;

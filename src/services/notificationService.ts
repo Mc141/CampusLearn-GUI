@@ -138,6 +138,7 @@ class NotificationService {
       'topic_reply': 'topic_replies',
       'new_topic': 'new_topics',
       'new_answer': 'new_answers',
+      'answer_reply': 'topic_replies',
       'new_resource': null,
       'tutor_assignment': null,
       'moderation_action': null

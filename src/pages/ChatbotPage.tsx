@@ -35,6 +35,8 @@ import {
   chatbotConversationService,
   ChatbotConversation,
 } from "../services/chatbotConversationService";
+import { modulesService } from "../services/modulesService";
+import { Module } from "../types";
 import MarkdownRenderer from "../components/MarkdownRenderer";
 
 const ChatbotPage: React.FC = () => {
@@ -52,18 +54,28 @@ const ChatbotPage: React.FC = () => {
     tutorModule?: string;
     selectedModule?: string;
   } | null>(null);
+  const [availableModules, setAvailableModules] = useState<Module[]>([]);
+  const [modulesLoading, setModulesLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Available modules for escalation
-  const availableModules = [
-    { code: "BCS101", name: "Programming Fundamentals" },
-    { code: "BCS102", name: "Data Structures & Algorithms" },
-    { code: "BCS201", name: "Software Engineering" },
-    { code: "BCS202", name: "Database Management" },
-    { code: "DIP101", name: "Diploma Foundation" },
-    { code: "BCom", name: "Business Commerce" },
-    { code: "General", name: "General Academic Support" },
-  ];
+  // Load modules on mount
+  useEffect(() => {
+    const loadModules = async () => {
+      try {
+        setModulesLoading(true);
+        const modules = await modulesService.getAllModules();
+        setAvailableModules(modules);
+      } catch (error) {
+        console.error("Error loading modules:", error);
+        // Fallback to empty array if loading fails
+        setAvailableModules([]);
+      } finally {
+        setModulesLoading(false);
+      }
+    };
+
+    loadModules();
+  }, []);
 
   // Load or create conversation on mount
   useEffect(() => {
@@ -584,9 +596,12 @@ const ChatbotPage: React.FC = () => {
                             }
                           }}
                           displayEmpty
+                          disabled={modulesLoading}
                         >
                           <MenuItem value="" disabled>
-                            Select Module
+                            {modulesLoading
+                              ? "Loading modules..."
+                              : "Select Module"}
                           </MenuItem>
                           {availableModules.map((module) => (
                             <MenuItem key={module.code} value={module.code}>

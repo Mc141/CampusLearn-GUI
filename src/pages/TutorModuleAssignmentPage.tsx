@@ -59,59 +59,42 @@ const TutorModuleAssignmentPage: React.FC = () => {
   const [selectedModuleId, setSelectedModuleId] = useState("");
   const [assignmentLoading, setAssignmentLoading] = useState(false);
 
+  // Load tutors function
+  const loadTutors = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Request timeout - please try again"));
+        }, 10000); // 10 second timeout
+      });
+
+      const dataPromise = tutorModuleAssignmentService.getAllApprovedTutors();
+
+      const tutorsData = (await Promise.race([
+        dataPromise,
+        timeoutPromise,
+      ])) as TutorWithModuleDetails[];
+
+      setTutors(tutorsData);
+    } catch (err) {
+      console.error("Error loading tutors:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load tutors. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load tutors on component mount
   useEffect(() => {
-    let isMounted = true;
-    let timeoutId: NodeJS.Timeout;
-
-    const loadTutors = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Add timeout to prevent hanging
-        const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => {
-            reject(new Error("Request timeout - please try again"));
-          }, 10000); // 10 second timeout
-        });
-
-        const dataPromise = tutorModuleAssignmentService.getAllApprovedTutors();
-
-        const tutorsData = (await Promise.race([
-          dataPromise,
-          timeoutPromise,
-        ])) as TutorWithModuleDetails[];
-
-        clearTimeout(timeoutId);
-
-        if (isMounted) {
-          setTutors(tutorsData);
-        }
-      } catch (err) {
-        console.error("Error loading tutors:", err);
-        if (isMounted) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Failed to load tutors. Please try again."
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
     loadTutors();
-
-    return () => {
-      isMounted = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
   }, []);
 
   const handleOpenAssignmentDialog = async (tutor: TutorWithModuleDetails) => {

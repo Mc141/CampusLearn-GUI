@@ -34,7 +34,6 @@ import {
   Assignment,
   Settings,
   Help,
-  People,
   PersonAdd,
   AdminPanelSettings,
   QuestionAnswer,
@@ -98,11 +97,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     if (user?.role === "student") {
       baseItems.splice(1, 0, {
-        text: "Tutor Matching",
-        icon: <People />,
-        path: "/tutor-matching",
-      });
-      baseItems.splice(2, 0, {
         text: "Apply as Tutor",
         icon: <School />,
         path: "/tutor-application",
@@ -111,11 +105,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     if (user?.role === "tutor") {
       baseItems.splice(1, 0, {
-        text: "Tutor Matching",
-        icon: <People />,
-        path: "/tutor-matching",
-      });
-      baseItems.splice(2, 0, {
         text: "Escalations",
         icon: <Assignment />,
         path: "/tutor/escalations",
@@ -152,14 +141,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         text: "Escalation Management",
         icon: <Assignment />,
         path: "/admin/escalations",
-      });
-    }
-
-    if (user?.role === "student") {
-      baseItems.push({
-        text: "Become a Tutor",
-        icon: <Assignment />,
-        path: "/tutor-registration",
       });
     }
 

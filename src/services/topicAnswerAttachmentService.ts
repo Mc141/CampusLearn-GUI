@@ -159,7 +159,8 @@ export const topicAnswerAttachmentService = {
     const uploadedAttachments: TopicAnswerAttachment[] = [];
     for (const file of files) {
       const fileId = uuidv4();
-      const filePath = `topic-answer-attachments/${answerId}/${fileId}-${file.name}`;
+      const sanitizedFileName = this.sanitizeFileName(file.name);
+      const filePath = `topic-answer-attachments/${answerId}/${fileId}-${sanitizedFileName}`;
 
       onProgress?.({
         fileId,
@@ -226,6 +227,16 @@ export const topicAnswerAttachmentService = {
       }
     }
     return uploadedAttachments;
+  },
+
+  // Helper method to sanitize filename for Supabase Storage
+  sanitizeFileName(fileName: string): string {
+    // Replace spaces with underscores and remove special characters
+    return fileName
+      .replace(/\s+/g, '_')           // Replace spaces with underscores
+      .replace(/[^\w\-_.]/g, '')       // Remove special characters except word chars, hyphens, underscores, dots
+      .replace(/_{2,}/g, '_')         // Replace multiple underscores with single underscore
+      .replace(/^_|_$/g, '');         // Remove leading/trailing underscores
   },
 
   // Helper method to determine file type from MIME type

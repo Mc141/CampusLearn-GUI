@@ -122,7 +122,7 @@ export interface Notification {
   userId: string;
   title: string;
   message: string;
-  type: 'question' | 'answer' | 'message' | 'topic' | 'system';
+  type: 'question' | 'answer' | 'message' | 'topic' | 'system' | 'new_message' | 'new_escalation' | 'forum_reply' | 'topic_reply' | 'new_topic' | 'new_answer' | 'new_resource' | 'tutor_assignment' | 'moderation_action' | 'answer_reply';
   isRead: boolean;
   createdAt: Date;
   actionUrl?: string;

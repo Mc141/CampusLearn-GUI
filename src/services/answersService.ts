@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase';
 import { Answer } from '../types';
 import { tutorTopicAssignmentService } from './tutorTopicAssignmentService';
+import { topicSubscriptionService } from './topicSubscriptionService';
+import { notificationService } from './notificationService';
 
 export interface CreateAnswerData {
   content: string;
@@ -32,6 +34,7 @@ export const answersService = {
           )
         `)
         .eq('question_id', questionId)
+        .eq('is_moderated', false)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -112,7 +115,7 @@ export const answersService = {
         .eq('id', questionId)
         .eq('status', 'open');
 
-      return {
+      const answer = {
         id: data.id,
         questionId: data.question_id,
         tutorId: data.tutor_id,
@@ -122,6 +125,50 @@ export const answersService = {
         createdAt: new Date(data.created_at),
         updatedAt: new Date(data.updated_at),
       };
+
+      // Send notifications to topic subscribers and question author
+      try {
+        // Get question details for notification
+        const { data: questionData } = await supabase
+          .from('questions')
+          .select('title, topic_id, student_id')
+          .eq('id', questionId)
+          .single();
+
+        // Get tutor name for notification
+        const { data: tutorData } = await supabase
+          .from('users')
+          .select('first_name, last_name')
+          .eq('id', tutorId)
+          .single();
+
+        if (questionData && tutorData) {
+          const tutorName = `${tutorData.first_name} ${tutorData.last_name}`;
+          
+          // Notify topic subscribers
+          await topicSubscriptionService.notifyNewAnswer(
+            questionData.topic_id,
+            questionData.title,
+            tutorName,
+            questionId
+          );
+
+          // Notify the question author directly (if not the same as answerer)
+          if (questionData.student_id !== tutorId) {
+            await notificationService.notifyNewAnswer(
+              questionData.student_id,
+              tutorName,
+              questionData.title,
+              questionId
+            );
+          }
+        }
+      } catch (notificationError) {
+        console.error('Error sending notifications:', notificationError);
+        // Don't fail the answer creation if notification fails
+      }
+
+      return answer;
     } catch (error) {
       console.error('Error in createAnswer:', error);
       throw error;

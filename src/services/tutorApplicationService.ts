@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { topicAutoAssignmentService } from './topicAutoAssignmentService';
 import { Module } from '../types';
 
 export interface CreateTutorApplicationData {
@@ -260,6 +261,14 @@ export const tutorApplicationService = {
           if (roleError) {
             console.error('Error updating user role:', roleError);
             throw roleError;
+          }
+
+          // Auto-assign tutor to existing topics for their approved modules
+          try {
+            await topicAutoAssignmentService.autoAssignTutorToExistingTopics(application.user_id);
+          } catch (autoAssignError) {
+            console.error('Error auto-assigning tutor to existing topics:', autoAssignError);
+            // Don't fail the approval if auto-assignment fails
           }
         }
       }

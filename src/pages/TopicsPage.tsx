@@ -175,13 +175,16 @@ const TopicsPage: React.FC = () => {
       topic.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesModule =
       !selectedModule || topic.moduleCode === selectedModule;
-    return matchesSearch && matchesModule;
+    const isNotModerated = !topic.isModerated; // Hide moderated topics
+    return matchesSearch && matchesModule && isNotModerated;
   });
 
   const subscribedTopics = topics.filter((topic) =>
-    subscriptions.has(topic.id)
+    subscriptions.has(topic.id) && !topic.isModerated
   );
-  const managedTopics = topics.filter((topic) => topic.createdBy === user?.id);
+  const managedTopics = topics.filter((topic) => 
+    topic.createdBy === user?.id && !topic.isModerated
+  );
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -546,24 +549,25 @@ const TopicsPage: React.FC = () => {
                       >
                         View
                       </Button>
-                      {topic.createdBy === user?.id && (
-                        <>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditTopic(topic)}
-                            title="Edit topic"
-                          >
-                            <Edit />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteTopic(topic.id)}
-                            title="Delete topic"
-                          >
-                            <Delete />
-                          </IconButton>
-                        </>
-                      )}
+                      {(user?.role === "admin" || user?.role === "tutor") &&
+                        topic.createdBy === user?.id && (
+                          <>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEditTopic(topic)}
+                              title="Edit topic"
+                            >
+                              <Edit />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteTopic(topic.id)}
+                              title="Delete topic"
+                            >
+                              <Delete />
+                            </IconButton>
+                          </>
+                        )}
                     </Box>
                   </ListItem>
                   {index < getTopicsForTab().length - 1 && <Divider />}
@@ -727,12 +731,32 @@ const TopicsPage: React.FC = () => {
                       }
                     />
                     <Box sx={{ display: "flex", gap: 1 }}>
-                      <IconButton size="small">
-                        <Edit />
-                      </IconButton>
-                      <IconButton size="small">
-                        <Delete />
-                      </IconButton>
+                      {(user?.role === "admin" || user?.role === "tutor") && (
+                        <>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditTopic(topic)}
+                            title="Edit topic"
+                          >
+                            <Edit />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteTopic(topic.id)}
+                            title="Delete topic"
+                          >
+                            <Delete />
+                          </IconButton>
+                        </>
+                      )}
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Visibility />}
+                        onClick={() => navigate(`/topics/${topic.id}`)}
+                      >
+                        View
+                      </Button>
                     </Box>
                   </ListItem>
                   {index < managedTopics.length - 1 && <Divider />}

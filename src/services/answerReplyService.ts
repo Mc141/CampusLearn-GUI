@@ -88,7 +88,7 @@ export const answerReplyService = {
         updatedAt: new Date(data.updated_at)
       };
 
-      // Create notification for the answer author (if not replying to their own answer)
+      // Create notifications for the answer author and question author
       try {
         if (authorId) {
           // Get answer details to find the author and topic
@@ -98,13 +98,14 @@ export const answerReplyService = {
               tutor_id,
               question:questions(
                 title,
+                student_id,
                 topic:topics(title)
               )
             `)
             .eq('id', replyData.answerId)
             .single();
 
-          if (answerData && answerData.tutor_id !== authorId) {
+          if (answerData && answerData.question?.topic?.title) {
             // Get replier's name
             const { data: replierData } = await supabase
               .from('users')
@@ -112,19 +113,35 @@ export const answerReplyService = {
               .eq('id', authorId)
               .single();
 
-            if (replierData && answerData.question?.topic?.title) {
+            if (replierData) {
               const replierName = replyData.isAnonymous ? 'Anonymous' : `${replierData.first_name} ${replierData.last_name}`;
-              await notificationService.notifyTopicReply(
-                answerData.tutor_id, 
-                replierName, 
-                answerData.question.topic.title, 
-                replyData.answerId
-              );
+              
+              // Notify the answer author (if not replying to their own answer)
+              if (answerData.tutor_id !== authorId) {
+                await notificationService.notifyTopicReply(
+                  answerData.tutor_id, 
+                  replierName, 
+                  answerData.question.topic.title, 
+                  replyData.answerId
+                );
+              }
+
+              // Notify the question author (if not the same as replier and not the answer author)
+              if (answerData.question.student_id !== authorId && answerData.question.student_id !== answerData.tutor_id) {
+                await notificationService.createNotification({
+                  userId: answerData.question.student_id,
+                  type: 'answer_reply',
+                  title: `New Reply to Answer`,
+                  message: `${replierName} replied to an answer on your question: "${answerData.question.title}"`,
+                  link: `/topics/${answerData.question.topic.title}/question/${answerData.question.student_id}`,
+                  relatedEntityId: replyData.answerId
+                });
+              }
             }
           }
         }
       } catch (notificationError) {
-        console.error('Error creating topic reply notification:', notificationError);
+        console.error('Error creating reply notifications:', notificationError);
         // Don't fail the reply creation if notification fails
       }
 

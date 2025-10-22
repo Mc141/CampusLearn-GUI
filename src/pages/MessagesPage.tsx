@@ -369,7 +369,20 @@ const MessagesPage: React.FC = () => {
   const handleCreateConversation = async () => {
     if (!user || !selectedTutor || !initialMessage.trim()) return;
 
+    // Prevent sending message to yourself
+    if (user.id === selectedTutor) {
+      setError("You cannot send a message to yourself");
+      return;
+    }
+
     try {
+      console.log("Creating conversation with:", {
+        userId: user.id,
+        selectedTutor,
+        initialMessage: initialMessage.trim(),
+        selectedTopic,
+      });
+
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
@@ -653,11 +666,13 @@ const MessagesPage: React.FC = () => {
               onChange={(e) => setSelectedTutor(e.target.value)}
               disabled={!selectedTopic}
             >
-              {availableTutors.map((tutor) => (
-                <MenuItem key={tutor.id} value={tutor.id}>
-                  {tutor.firstName} {tutor.lastName}
-                </MenuItem>
-              ))}
+              {availableTutors
+                .filter((tutor) => tutor.id !== user?.id) // Exclude current user
+                .map((tutor) => (
+                  <MenuItem key={tutor.id} value={tutor.id}>
+                    {tutor.firstName} {tutor.lastName}
+                  </MenuItem>
+                ))}
             </Select>
           </FormControl>
 

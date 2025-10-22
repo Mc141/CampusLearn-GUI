@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase';
+import { topicAutoAssignmentService } from './topicAutoAssignmentService';
+import { tutorTopicAssignmentService } from './tutorTopicAssignmentService';
 
 export interface TutorModuleAssignment {
   id: string;
@@ -73,6 +75,23 @@ export const tutorModuleAssignmentService = {
         console.error('Error assigning tutor to module:', assignError);
         throw assignError;
       }
+
+      // Auto-assign tutor to existing topics for this module
+      try {
+        // Get module code for auto-assignment
+        const { data: moduleData } = await supabase
+          .from('modules')
+          .select('code')
+          .eq('id', moduleId)
+          .single();
+
+        if (moduleData) {
+          await topicAutoAssignmentService.autoAssignModuleTutorsToExistingTopics(moduleData.code);
+        }
+      } catch (autoAssignError) {
+        console.error('Error auto-assigning tutor to existing topics:', autoAssignError);
+        // Don't fail the module assignment if auto-assignment fails
+      }
     } catch (error) {
       console.error('Error in assignTutorToModule:', error);
       throw error;
@@ -105,6 +124,51 @@ export const tutorModuleAssignmentService = {
       if (error) {
         console.error('Error removing tutor from module:', error);
         throw error;
+      }
+
+      // Also remove tutor from all topics for this module
+      try {
+        // Get module code for topic removal
+        const { data: moduleData } = await supabase
+          .from('modules')
+          .select('code')
+          .eq('id', moduleId)
+          .single();
+
+        if (moduleData) {
+          // Get all topics for this module
+          const { data: topics, error: topicsError } = await supabase
+            .from('topics')
+            .select('id, title')
+            .eq('module_code', moduleData.code)
+            .eq('is_active', true);
+
+          if (topicsError) {
+            console.error('Error fetching topics for module:', topicsError);
+            throw topicsError;
+          }
+
+          if (topics && topics.length > 0) {
+            console.log(`Removing tutor ${tutorId} from ${topics.length} topics for module ${moduleData.code}`);
+
+            // Remove tutor from each topic
+            const removalPromises = topics.map(async (topic) => {
+              try {
+                await tutorTopicAssignmentService.removeTutorFromTopic(topic.id, tutorId);
+                console.log(`Successfully removed tutor ${tutorId} from topic: ${topic.title}`);
+              } catch (error) {
+                console.error(`Failed to remove tutor ${tutorId} from topic ${topic.title}:`, error);
+              }
+            });
+
+            // Wait for all removals to complete
+            await Promise.allSettled(removalPromises);
+            console.log(`Completed removing tutor ${tutorId} from all topics for module ${moduleData.code}`);
+          }
+        }
+      } catch (topicRemovalError) {
+        console.error('Error removing tutor from topics:', topicRemovalError);
+        // Don't fail the module removal if topic removal fails
       }
     } catch (error) {
       console.error('Error in removeTutorFromModule:', error);

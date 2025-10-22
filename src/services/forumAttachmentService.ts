@@ -222,7 +222,8 @@ export const forumAttachmentService = {
         });
 
         // Upload file to Supabase Storage
-        const filePath = `forum-attachments/${postId}/${fileId}-${file.name}`;
+        const sanitizedFileName = this.sanitizeFileName(file.name);
+        const filePath = `forum-attachments/${postId}/${fileId}-${sanitizedFileName}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('CampusLearn Resources')
           .upload(filePath, file);
@@ -300,7 +301,8 @@ export const forumAttachmentService = {
         });
 
         // Upload file to Supabase Storage
-        const filePath = `forum-attachments/replies/${replyId}/${fileId}-${file.name}`;
+        const sanitizedFileName = this.sanitizeFileName(file.name);
+        const filePath = `forum-attachments/replies/${replyId}/${fileId}-${sanitizedFileName}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('CampusLearn Resources')
           .upload(filePath, file);
@@ -355,6 +357,16 @@ export const forumAttachmentService = {
     }
 
     return uploadedAttachments;
+  },
+
+  // Helper method to sanitize filename for Supabase Storage
+  sanitizeFileName(fileName: string): string {
+    // Replace spaces with underscores and remove special characters
+    return fileName
+      .replace(/\s+/g, '_')           // Replace spaces with underscores
+      .replace(/[^\w\-_.]/g, '')       // Remove special characters except word chars, hyphens, underscores, dots
+      .replace(/_{2,}/g, '_')         // Replace multiple underscores with single underscore
+      .replace(/^_|_$/g, '');         // Remove leading/trailing underscores
   },
 
   // Helper method to determine file type from MIME type

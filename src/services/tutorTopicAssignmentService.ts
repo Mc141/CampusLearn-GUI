@@ -63,9 +63,9 @@ export const tutorTopicAssignmentService = {
         .select('id')
         .eq('topic_id', topicId)
         .eq('tutor_id', tutorId)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single()
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         console.error('Error checking existing assignment:', checkError);
         throw checkError;
       }
@@ -159,7 +159,8 @@ export const tutorTopicAssignmentService = {
             description,
             module_code,
             created_at,
-            is_active
+            is_active,
+            is_moderated
           )
         `)
         .eq('tutor_id', tutorId);
@@ -169,7 +170,9 @@ export const tutorTopicAssignmentService = {
         throw error;
       }
 
-      return data.map(assignment => assignment.topic);
+      return data
+        .map(assignment => assignment.topic)
+        .filter(topic => !topic.is_moderated);
     } catch (error) {
       console.error('Error in getTopicsForTutor:', error);
       throw error;

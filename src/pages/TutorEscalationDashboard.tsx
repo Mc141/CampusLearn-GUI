@@ -168,8 +168,15 @@ const TutorEscalationDashboard: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+  const formatDate = (dateString: string | Date | null | undefined) => {
+    if (!dateString) return "N/A";
+    try {
+      const date =
+        typeof dateString === "string" ? new Date(dateString) : dateString;
+      return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleString();
+    } catch (error) {
+      return "Invalid Date";
+    }
   };
 
   if (loading) {

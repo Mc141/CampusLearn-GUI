@@ -24,14 +24,18 @@ import {
 } from "@mui/icons-material";
 import { AnswerReplyAttachment } from "../types";
 import { answerReplyAttachmentService } from "../services/answerReplyAttachmentService";
+import { useAuth } from "../context/AuthContext";
 
 interface AnswerReplyAttachmentsProps {
   replyId: string;
+  canDelete?: boolean;
 }
 
 const AnswerReplyAttachments: React.FC<AnswerReplyAttachmentsProps> = ({
   replyId,
+  canDelete = true,
 }) => {
+  const { user } = useAuth();
   const [attachments, setAttachments] = useState<AnswerReplyAttachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +43,10 @@ const AnswerReplyAttachments: React.FC<AnswerReplyAttachmentsProps> = ({
   useEffect(() => {
     loadAttachments();
   }, [replyId]);
+
+  const canDeleteAttachment = (attachment: AnswerReplyAttachment) => {
+    return canDelete && user?.id === attachment.uploadedBy;
+  };
 
   const loadAttachments = async () => {
     try {
@@ -189,16 +197,18 @@ const AnswerReplyAttachments: React.FC<AnswerReplyAttachmentsProps> = ({
                   <Download fontSize="small" />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Delete">
-                <IconButton
-                  size="small"
-                  onClick={() => handleDelete(attachment.id)}
-                  edge="end"
-                  color="error"
-                >
-                  <Delete fontSize="small" />
-                </IconButton>
-              </Tooltip>
+              {canDeleteAttachment(attachment) && (
+                <Tooltip title="Delete">
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDelete(attachment.id)}
+                    edge="end"
+                    color="error"
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
             </ListItemSecondaryAction>
           </ListItem>
         ))}

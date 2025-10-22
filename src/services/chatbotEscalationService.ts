@@ -80,50 +80,98 @@ class ChatbotEscalationService {
     try {
       console.log("🔍 Finding available tutors for module:", moduleCode);
       
-      // Get tutors assigned to the specific module or all tutors if no module specified
-      let query = supabase
+      // If no module specified or "General", get all tutors
+      if (!moduleCode || moduleCode === "General") {
+        const { data: tutors, error } = await supabase
+          .from("users")
+          .select(`
+            id,
+            first_name,
+            last_name,
+            email,
+            role
+          `)
+          .eq("role", "tutor")
+          .eq("is_active", true);
+
+        if (error) {
+          console.error("Error fetching tutors:", error);
+          return [];
+        }
+
+        if (!tutors) return [];
+
+        console.log("📊 All tutors found (General):", tutors.length);
+        
+        // Get current escalation counts for each tutor
+        const tutorIds = tutors.map(tutor => tutor.id);
+        const { data: escalationCounts } = await supabase
+          .from("chatbot_escalations")
+          .select("tutor_id")
+          .in("tutor_id", tutorIds)
+          .eq("status", "assigned");
+
+        const escalationCountMap = new Map<string, number>();
+        if (escalationCounts) {
+          escalationCounts.forEach(escalation => {
+            const count = escalationCountMap.get(escalation.tutor_id) || 0;
+            escalationCountMap.set(escalation.tutor_id, count + 1);
+          });
+        }
+
+        // Map to TutorWithAvailability format
+        return tutors.map(tutor => ({
+          id: tutor.id,
+          firstName: tutor.first_name,
+          lastName: tutor.last_name,
+          email: tutor.email,
+          modules: [], // Not needed for general escalations
+          isAvailable: (escalationCountMap.get(tutor.id) || 0) < 5,
+          currentEscalations: escalationCountMap.get(tutor.id) || 0,
+        }));
+      }
+
+      // For specific modules, get tutors assigned to that module through tutor_application_modules
+      const { data: tutors, error } = await supabase
         .from("users")
         .select(`
           id,
           first_name,
           last_name,
           email,
-          modules,
-          role
+          role,
+          tutor_applications!tutor_applications_user_id_fkey(
+            id,
+            status,
+            tutor_application_modules!inner(
+              module:modules!inner(
+                id,
+                code
+              )
+            )
+          )
         `)
         .eq("role", "tutor")
-        .eq("is_active", true);
-
-      const { data: tutors, error } = await query;
+        .eq("is_active", true)
+        .eq("tutor_applications.status", "approved")
+        .eq("tutor_applications.tutor_application_modules.module.code", moduleCode);
 
       if (error) {
-        console.error("Error fetching tutors:", error);
+        console.error("Error fetching tutors for module:", error);
         return [];
       }
 
       if (!tutors) return [];
 
-      console.log("📊 All tutors found:", tutors.length);
+      console.log("📊 Tutors found for module", moduleCode + ":", tutors.length);
       console.log("📋 Tutor details:", tutors.map(t => ({
         id: t.id,
         name: `${t.first_name} ${t.last_name}`,
-        modules: t.modules
+        email: t.email
       })));
 
-      // Filter tutors by module if specified
-      // If moduleCode is "General" or undefined, return all tutors
-      const relevantTutors = (moduleCode && moduleCode !== "General") 
-        ? tutors.filter(tutor => 
-            tutor.modules && 
-            Array.isArray(tutor.modules) && 
-            tutor.modules.includes(moduleCode)
-          )
-        : tutors;
-
-      console.log("✅ Relevant tutors after filtering:", relevantTutors.length);
-
       // Get current escalation counts for each tutor
-      const tutorIds = relevantTutors.map(tutor => tutor.id);
+      const tutorIds = tutors.map(tutor => tutor.id);
       const { data: escalationCounts } = await supabase
         .from("chatbot_escalations")
         .select("tutor_id")
@@ -139,15 +187,18 @@ class ChatbotEscalationService {
       }
 
       // Map to TutorWithAvailability format
-      return relevantTutors.map(tutor => ({
+      const relevantTutors = tutors.map(tutor => ({
         id: tutor.id,
         firstName: tutor.first_name,
         lastName: tutor.last_name,
         email: tutor.email,
-        modules: tutor.modules || [],
-        isAvailable: (escalationCountMap.get(tutor.id) || 0) < 5, // Max 5 concurrent escalations
+        modules: [moduleCode], // The module they're assigned to
+        isAvailable: (escalationCountMap.get(tutor.id) || 0) < 5,
         currentEscalations: escalationCountMap.get(tutor.id) || 0,
       }));
+
+      console.log("✅ Relevant tutors after filtering:", relevantTutors.length);
+      return relevantTutors;
     } catch (error) {
       console.error("Error finding available tutors:", error);
       return [];
@@ -198,32 +249,35 @@ class ChatbotEscalationService {
         console.log("📝 Original Question:", escalation.original_question);
         console.log("📚 Module:", escalation.module_code || 'General');
 
-        const messageContent = `Hi! I'm your assigned tutor for the CampusLearn AI escalation. 
+        const messageContent = `Hi! I need help with this question:
 
-**Student Question:** ${escalation.original_question}
+**Question:** ${escalation.original_question}
 
 **Module:** ${escalation.module_code || 'General'}
 
 **Escalation Reason:** ${escalation.escalation_reason || 'Complex question requiring human assistance'}
 
-I'm here to help you with this question. Please feel free to ask any follow-up questions or provide more details about what you need help with.`;
+Could you please help me with this? Thank you!`;
 
         console.log("💬 Message content:", messageContent);
 
         const messageResult = await messagingService.sendMessage({
-          senderId: tutorId,
-          receiverId: escalation.student_id,
+          senderId: escalation.student_id,
+          receiverId: tutorId,
           content: messageContent,
         });
 
         console.log("✅ Message sent successfully:", messageResult);
 
         if (messageResult) {
+          // Generate conversation ID for escalation tracking
+          const conversationId = messagingService.generateRoomName(escalation.student_id, tutorId);
+          
           // Update escalation with message thread ID
           await supabase
             .from("chatbot_escalations")
             .update({
-              message_thread_id: messageResult.conversationId,
+              message_thread_id: conversationId,
             })
             .eq("id", escalationId);
         }
@@ -309,7 +363,12 @@ I'm here to help you with this question. Please feel free to ask any follow-up q
         return [];
       }
 
-      return data || [];
+      return (data || []).map(escalation => ({
+        ...escalation,
+        createdAt: new Date(escalation.created_at),
+        assignedAt: escalation.assigned_at ? new Date(escalation.assigned_at) : null,
+        resolvedAt: escalation.resolved_at ? new Date(escalation.resolved_at) : null,
+      }));
     } catch (error) {
       console.error("Error fetching escalations for tutor:", error);
       return [];
@@ -334,7 +393,12 @@ I'm here to help you with this question. Please feel free to ask any follow-up q
         return [];
       }
 
-      return data || [];
+      return (data || []).map(escalation => ({
+        ...escalation,
+        createdAt: new Date(escalation.created_at),
+        assignedAt: escalation.assigned_at ? new Date(escalation.assigned_at) : null,
+        resolvedAt: escalation.resolved_at ? new Date(escalation.resolved_at) : null,
+      }));
     } catch (error) {
       console.error("Error fetching pending escalations:", error);
       return [];

@@ -230,6 +230,48 @@ class EmailService {
   }
 
   /**
+   * Send topic activity email notification
+   * @param recipientEmail - Recipient's email address
+   * @param recipientName - Recipient's name
+   * @param topicTitle - Topic title
+   * @param moduleCode - Module code
+   * @param activityType - Type of activity (new_question, new_answer, new_resource)
+   * @param activityTitle - Title of the activity
+   * @param activityDescription - Description of the activity
+   * @param activityAuthor - Author of the activity
+   * @param activityLink - Link to the activity
+   */
+  async sendTopicActivityEmail(
+    recipientEmail: string,
+    recipientName: string,
+    topicTitle: string,
+    moduleCode: string,
+    activityType: 'new_question' | 'new_answer' | 'new_resource',
+    activityTitle: string,
+    activityDescription: string,
+    activityAuthor: string,
+    activityLink: string
+  ): Promise<boolean> {
+    const activityTypeLabels = {
+      new_question: 'New Question',
+      new_answer: 'New Answer',
+      new_resource: 'New Resource'
+    };
+
+    const emailData: EmailNotificationData = {
+      to_email: recipientEmail,
+      to_name: recipientName,
+      notification_type: 'Topic Activity',
+      notification_title: `${activityTypeLabels[activityType]} in "${topicTitle}"`,
+      notification_message: `${activityDescription}\n\nPosted by: ${activityAuthor}\nModule: ${moduleCode}\n\nClick below to view and participate in the discussion.`,
+      notification_link: activityLink,
+      platform_name: 'CampusLearn'
+    };
+
+    return this.sendEmailNotification(emailData);
+  }
+
+  /**
    * Check if user has email notifications enabled for a specific type
    * @param userPreferences - User's email preferences
    * @param notificationType - Type of notification

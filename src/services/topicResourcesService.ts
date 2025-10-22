@@ -1,6 +1,7 @@
 import { supabase, dbQuery } from '../lib/supabase';
 import { fileUploadService } from './fileUploadService';
 import { v4 as uuidv4 } from 'uuid';
+import { topicSubscriptionService } from './topicSubscriptionService';
 
 export interface TopicResource {
   id: string;
@@ -297,7 +298,25 @@ export const topicResourcesService = {
         throw new Error('No data returned from database insert');
       }
 
-      return topicResourcesService.mapResourceToTopicResource(data);
+      const resource = topicResourcesService.mapResourceToTopicResource(data);
+
+      // Send notifications to topic subscribers
+      try {
+        const authorName = `${data.uploaded_by_user.first_name} ${data.uploaded_by_user.last_name}`;
+        
+        await topicSubscriptionService.notifyNewResource(
+          topicId,
+          resourceData.title,
+          resourceData.type,
+          authorName,
+          data.id
+        );
+      } catch (notificationError) {
+        console.error('Error sending topic subscription notifications:', notificationError);
+        // Don't fail the resource creation if notification fails
+      }
+
+      return resource;
     } catch (error) {
       console.error('Error creating resource:', error);
       throw error;

@@ -192,7 +192,6 @@ const AdminUserManagementPage: React.FC = () => {
               <TableCell>Role</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Created</TableCell>
-              <TableCell>Last Login</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -230,11 +229,6 @@ const AdminUserManagementPage: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   {new Date(row.created_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {row.last_login
-                    ? new Date(row.last_login).toLocaleDateString()
-                    : "-"}
                 </TableCell>
                 <TableCell align="right">
                   <IconButton

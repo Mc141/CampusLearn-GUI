@@ -159,7 +159,7 @@ const AnswerReplies: React.FC<AnswerRepliesProps> = ({
                 </Box>
 
                 {/* Attachments */}
-                <AnswerReplyAttachments replyId={reply.id} />
+                <AnswerReplyAttachments replyId={reply.id} canDelete={false} />
 
                 {/* Reply Actions */}
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
