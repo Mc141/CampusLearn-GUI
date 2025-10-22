@@ -96,14 +96,14 @@ const TutorEscalationDashboard: React.FC = () => {
   const handleProcessPendingEscalations = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Tutor triggered processing of pending escalations");
+      console.log(" Tutor triggered processing of pending escalations");
       await chatbotEscalationService.processPendingEscalations();
 
       // Reload data to show any new assignments
       await loadEscalations();
       await loadStats();
 
-      console.log("✅ Pending escalations processing completed");
+      console.log(" Pending escalations processing completed");
     } catch (err) {
       console.error("Error processing pending escalations:", err);
       setError("Failed to process pending escalations");
@@ -224,7 +224,7 @@ const TutorEscalationDashboard: React.FC = () => {
               px: 3,
             }}
           >
-            🔄 Check for New Assignments
+            Check for New Assignments
           </Button>
         </Box>
       </Box>

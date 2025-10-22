@@ -54,11 +54,11 @@ class EmailService {
         templateParams
       );
 
-      console.log('✅ Email sent successfully:', response.status);
+      console.log(' Email sent successfully:', response.status);
       return true;
 
     } catch (error) {
-      console.error('❌ Error sending email:', error);
+      console.error(' Error sending email:', error);
       return false;
     }
   }

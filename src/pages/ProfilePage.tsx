@@ -167,7 +167,7 @@ const ProfilePage: React.FC = () => {
     if (!user?.id) return;
 
     try {
-      console.log("💾 DEBUG: Saving profile with data:", {
+      console.log(" DEBUG: Saving profile with data:", {
         userId: user.id,
         emailNotifications: profileData.emailNotifications,
         smsNotifications: profileData.smsNotifications,
@@ -178,12 +178,12 @@ const ProfilePage: React.FC = () => {
         ...profileData,
         profilePicture: profilePicture,
       });
-      console.log("✅ Profile saved successfully");
+      console.log(" Profile saved successfully");
       // Refresh user profile to get updated data
       await refreshUserProfile();
       setIsEditing(false);
     } catch (error) {
-      console.error("❌ Error saving profile:", error);
+      console.error(" Error saving profile:", error);
       // You could add a toast notification here
     }
   };
@@ -217,7 +217,7 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleInputChange = (field: string, value: any) => {
-    console.log("🔄 DEBUG: Profile field changed:", { field, value });
+    console.log(" DEBUG: Profile field changed:", { field, value });
     setProfileData((prev) => ({ ...prev, [field]: value }));
   };
 

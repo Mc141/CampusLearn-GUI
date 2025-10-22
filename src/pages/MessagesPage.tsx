@@ -213,7 +213,7 @@ const MessagesPage: React.FC = () => {
     if (!selectedConversation || !user) return;
 
     console.log(
-      "🔄 handleMessageUpdate called with",
+      " handleMessageUpdate called with",
       messages.length,
       "messages"
     );
@@ -224,7 +224,7 @@ const MessagesPage: React.FC = () => {
 
     while (retries > 0) {
       try {
-        console.log(`🔄 Attempting to store messages (${4 - retries}/3)...`);
+        console.log(` Attempting to store messages (${4 - retries}/3)...`);
 
         // No timeout for message storage - it's critical
         await messagingService.storeMessages(
@@ -234,7 +234,7 @@ const MessagesPage: React.FC = () => {
         );
 
         // If we get here, messages were stored successfully
-        console.log("✅ Messages stored successfully");
+        console.log(" Messages stored successfully");
 
         // Try to reload conversations, but don't fail if this doesn't work
         try {
@@ -256,7 +256,7 @@ const MessagesPage: React.FC = () => {
         retries--;
 
         console.error(
-          `❌ Message storage failed (${retries} retries left):`,
+          ` Message storage failed (${retries} retries left):`,
           err
         );
 

@@ -79,14 +79,14 @@ export const RealtimeChat: React.FC<RealtimeChatProps> = ({
 
       if (currentMessageIds !== previousMessageIds) {
         console.log(
-          "📨 Messages changed, calling onMessage with",
+          " Messages changed, calling onMessage with",
           allMessages.length,
           "messages"
         );
         onMessage(allMessages);
         previousMessagesRef.current = [...allMessages];
       } else {
-        console.log("⏭️ Messages unchanged, skipping onMessage call");
+        console.log("Messages unchanged, skipping onMessage call");
       }
     }
   }, [allMessages, onMessage]);

@@ -40,7 +40,7 @@ class NotificationService {
         .single();
 
       if (error) {
-        console.error("❌ Error creating notification:", error);
+        console.error(" Error creating notification:", error);
         return null;
       }
 
@@ -51,7 +51,7 @@ class NotificationService {
 
       return mappedNotification;
     } catch (error) {
-      console.error("💥 Error creating notification:", error);
+      console.error("Error creating notification:", error);
       return null;
     }
   }
@@ -73,13 +73,13 @@ class NotificationService {
         .single();
 
       if (error || !userProfile) {
-        console.log("📧 Could not fetch user profile for email notification:", error);
+        console.log("Could not fetch user profile for email notification:", error);
         return;
       }
 
       // Check if email notifications are enabled
       if (!userProfile.email_notifications) {
-        console.log("📧 Email notifications disabled for user:", userId);
+        console.log("Email notifications disabled for user:", userId);
         return;
       }
 
@@ -88,7 +88,7 @@ class NotificationService {
       const notificationTypeKey = this.getNotificationTypeKey(type);
       
       if (notificationTypeKey && preferences[notificationTypeKey] === false) {
-        console.log("📧 Email notifications disabled for type:", type);
+        console.log("Email notifications disabled for type:", type);
         return;
       }
 
@@ -106,9 +106,9 @@ class NotificationService {
         platform_name: 'CampusLearn'
       });
 
-      console.log("📧 Email notification sent successfully to:", userProfile.email);
+      console.log("Email notification sent successfully to:", userProfile.email);
     } catch (error) {
-      console.error("📧 Error sending email notification:", error);
+      console.error("Error sending email notification:", error);
       // Don't throw error - email failure shouldn't break the notification system
     }
   }
@@ -149,7 +149,7 @@ class NotificationService {
   // Get notifications for a user
   async getNotifications(userId: string, limit: number = 50): Promise<Notification[]> {
     try {
-      console.log('📋 Getting notifications for user:', userId);
+      console.log('Getting notifications for user:', userId);
       
       const { data, error } = await supabase
         .from("notifications")
@@ -159,17 +159,17 @@ class NotificationService {
         .limit(limit);
 
       if (error) {
-        console.error("❌ Error fetching notifications:", error);
+        console.error(" Error fetching notifications:", error);
         return [];
       }
 
-      console.log('📋 Raw notifications data:', data);
+      console.log('Raw notifications data:', data);
       const mappedNotifications = (data || []).map(this.mapNotification);
-      console.log('📋 Mapped notifications:', mappedNotifications);
+      console.log('Mapped notifications:', mappedNotifications);
       
       return mappedNotifications;
     } catch (error) {
-      console.error("💥 Error fetching notifications:", error);
+      console.error("Error fetching notifications:", error);
       return [];
     }
   }
@@ -177,7 +177,7 @@ class NotificationService {
   // Get unread notification count
   async getUnreadCount(userId: string): Promise<number> {
     try {
-      console.log('🔢 Getting unread count for user:', userId);
+      console.log('Getting unread count for user:', userId);
       
       const { data, error } = await supabase
         .from("notifications")
@@ -186,16 +186,16 @@ class NotificationService {
         .eq("is_read", false);
 
       if (error) {
-        console.error("❌ Error fetching unread count:", error);
+        console.error(" Error fetching unread count:", error);
         return 0;
       }
 
-      console.log('🔢 Unread count query result:', data);
-      console.log('🔢 Actual unread count:', data?.length || 0);
+      console.log('Unread count query result:', data);
+      console.log('Actual unread count:', data?.length || 0);
       
       return data?.length || 0;
     } catch (error) {
-      console.error("💥 Error fetching unread count:", error);
+      console.error("Error fetching unread count:", error);
       return 0;
     }
   }

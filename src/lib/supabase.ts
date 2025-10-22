@@ -9,9 +9,9 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 export const logSupabaseCall = (operation: string, startTime: number) => {
   const duration = Date.now() - startTime;
   if (duration > 1000) {
-    console.warn(`⚠️ Slow Supabase call: ${operation} took ${duration}ms`);
+    console.warn(`Slow Supabase call: ${operation} took ${duration}ms`);
   } else {
-    console.log(`✅ Supabase call: ${operation} completed in ${duration}ms`);
+    console.log(`Supabase call: ${operation} completed in ${duration}ms`);
   }
 };
 
@@ -67,19 +67,19 @@ export const dbQuery = async <T>(
       
       // Don't retry on certain errors
       if (error?.code === 'PGRST116' || error?.code === '42501' || error?.message?.includes('No active session') || error?.message?.includes('timeout')) {
-        console.error(`❌ ${operationName} failed permanently:`, error);
+        console.error(`${operationName} failed permanently:`, error);
         throw error;
       }
       
       if (attempt < retries) {
-        console.warn(`🔄 ${operationName} attempt ${attempt} failed, retrying in ${delay}ms:`, error);
+        console.warn(`${operationName} attempt ${attempt} failed, retrying in ${delay}ms:`, error);
         await new Promise(resolve => setTimeout(resolve, delay));
         delay *= 2; // Exponential backoff
       }
     }
   }
   
-  console.error(`❌ ${operationName} failed after ${retries} attempts:`, lastError);
+  console.error(`${operationName} failed after ${retries} attempts:`, lastError);
   throw lastError;
 };
 

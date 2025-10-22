@@ -52,15 +52,15 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
     try {
       setLoading(true);
-      console.log("🔄 Refreshing notifications for user:", user.id);
+      console.log("Refreshing notifications for user:", user.id);
 
       const [notificationsData, count] = await Promise.all([
         notificationService.getNotifications(user.id),
         notificationService.getUnreadCount(user.id),
       ]);
 
-      console.log("📊 Notifications data:", notificationsData);
-      console.log("🔢 Unread count:", count);
+      console.log("Notifications data:", notificationsData);
+      console.log("Unread count:", count);
 
       setNotifications(notificationsData);
       setUnreadCount(count);

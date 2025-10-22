@@ -197,7 +197,7 @@ class ChatbotEscalationService {
         currentEscalations: escalationCountMap.get(tutor.id) || 0,
       }));
 
-      console.log("✅ Relevant tutors after filtering:", relevantTutors.length);
+      console.log(" Relevant tutors after filtering:", relevantTutors.length);
       return relevantTutors;
     } catch (error) {
       console.error("Error finding available tutors:", error);
@@ -243,11 +243,11 @@ class ChatbotEscalationService {
 
       // Create message thread between student and tutor
       try {
-        console.log("🚀 Creating escalation message thread...");
-        console.log("📧 Tutor ID:", tutorId);
-        console.log("👨‍🎓 Student ID:", escalation.student_id);
-        console.log("📝 Original Question:", escalation.original_question);
-        console.log("📚 Module:", escalation.module_code || 'General');
+        console.log("Creating escalation message thread...");
+        console.log("Tutor ID:", tutorId);
+        console.log("Student ID:", escalation.student_id);
+        console.log("Original Question:", escalation.original_question);
+        console.log("Module:", escalation.module_code || 'General');
 
         const messageContent = `Hi! I need help with this question:
 
@@ -259,7 +259,7 @@ class ChatbotEscalationService {
 
 Could you please help me with this? Thank you!`;
 
-        console.log("💬 Message content:", messageContent);
+        console.log(" Message content:", messageContent);
 
         const messageResult = await messagingService.sendMessage({
           senderId: escalation.student_id,
@@ -267,7 +267,7 @@ Could you please help me with this? Thank you!`;
           content: messageContent,
         });
 
-        console.log("✅ Message sent successfully:", messageResult);
+        console.log(" Message sent successfully:", messageResult);
 
         if (messageResult) {
           // Generate conversation ID for escalation tracking
@@ -408,25 +408,25 @@ Could you please help me with this? Thank you!`;
   // Check for pending escalations and auto-assign them when tutors become available
   async processPendingEscalations(): Promise<void> {
     try {
-      console.log("🔄 Processing pending escalations...");
+      console.log(" Processing pending escalations...");
       
       const pendingEscalations = await this.getPendingEscalations();
       
       if (pendingEscalations.length === 0) {
-        console.log("✅ No pending escalations to process");
+        console.log(" No pending escalations to process");
         return;
       }
 
-      console.log(`📋 Found ${pendingEscalations.length} pending escalations`);
+      console.log(`Found ${pendingEscalations.length} pending escalations`);
 
       for (const escalation of pendingEscalations) {
-        console.log(`🔍 Processing escalation ${escalation.id} for module ${escalation.module_code}`);
+        console.log(`Processing escalation ${escalation.id} for module ${escalation.module_code}`);
         
         // Try to find available tutors for this escalation's module
         const availableTutors = await this.findAvailableTutors(escalation.module_code);
         
         if (availableTutors.length > 0) {
-          console.log(`👨‍🏫 Found ${availableTutors.length} available tutors for escalation ${escalation.id}`);
+          console.log(`👨Found ${availableTutors.length} available tutors for escalation ${escalation.id}`);
           
           // Sort by current escalations (least busy first) and assign
           const sortedTutors = availableTutors
@@ -435,22 +435,22 @@ Could you please help me with this? Thank you!`;
 
           if (sortedTutors.length > 0) {
             const selectedTutor = sortedTutors[0];
-            console.log(`🎯 Auto-assigning escalation ${escalation.id} to tutor ${selectedTutor.id}`);
+            console.log(`Auto-assigning escalation ${escalation.id} to tutor ${selectedTutor.id}`);
             
             const assigned = await this.assignTutorToEscalation(escalation.id, selectedTutor.id);
             
             if (assigned) {
-              console.log(`✅ Successfully auto-assigned escalation ${escalation.id} to tutor ${selectedTutor.id}`);
+              console.log(` Successfully auto-assigned escalation ${escalation.id} to tutor ${selectedTutor.id}`);
             } else {
-              console.log(`❌ Failed to auto-assign escalation ${escalation.id} to tutor ${selectedTutor.id}`);
+              console.log(` Failed to auto-assign escalation ${escalation.id} to tutor ${selectedTutor.id}`);
             }
           }
         } else {
-          console.log(`⚠️ No available tutors found for escalation ${escalation.id} (module: ${escalation.module_code})`);
+          console.log(`No available tutors found for escalation ${escalation.id} (module: ${escalation.module_code})`);
         }
       }
     } catch (error) {
-      console.error("💥 Error processing pending escalations:", error);
+      console.error("Error processing pending escalations:", error);
     }
   }
 
@@ -532,7 +532,7 @@ Could you please help me with this? Thank you!`;
   // Auto-assignment logic
   async autoAssignEscalation(escalationId: string): Promise<boolean> {
     try {
-      console.log("🔍 Starting auto-assignment for escalation:", escalationId);
+      console.log("Starting auto-assignment for escalation:", escalationId);
       
       // Get escalation details
       const { data: escalation, error: fetchError } = await supabase
@@ -542,11 +542,11 @@ Could you please help me with this? Thank you!`;
         .single();
 
       if (fetchError || !escalation) {
-        console.error("❌ Error fetching escalation for auto-assignment:", fetchError);
+        console.error(" Error fetching escalation for auto-assignment:", fetchError);
         return false;
       }
 
-      console.log("📋 Escalation details:", {
+      console.log("Escalation details:", {
         id: escalation.id,
         student_id: escalation.student_id,
         module_code: escalation.module_code,
@@ -556,8 +556,8 @@ Could you please help me with this? Thank you!`;
       // Find available tutors for the module
       const availableTutors = await this.findAvailableTutors(escalation.module_code);
       
-      console.log("👨‍🏫 Available tutors found:", availableTutors.length);
-      console.log("📊 Tutor details:", availableTutors.map(t => ({
+      console.log("Available tutors found:", availableTutors.length);
+      console.log("Tutor details:", availableTutors.map(t => ({
         id: t.id,
         name: `${t.firstName} ${t.lastName}`,
         email: t.email,
@@ -567,7 +567,7 @@ Could you please help me with this? Thank you!`;
       })));
       
       if (availableTutors.length === 0) {
-        console.log("❌ No available tutors found for escalation:", escalationId);
+        console.log(" No available tutors found for escalation:", escalationId);
         return false;
       }
 
@@ -576,18 +576,18 @@ Could you please help me with this? Thank you!`;
         .filter(tutor => tutor.isAvailable)
         .sort((a, b) => a.currentEscalations - b.currentEscalations);
 
-      console.log("📈 Sorted available tutors:", sortedTutors.map(t => ({
+      console.log("Sorted available tutors:", sortedTutors.map(t => ({
         name: `${t.firstName} ${t.lastName}`,
         currentEscalations: t.currentEscalations
       })));
 
       if (sortedTutors.length === 0) {
-        console.log("❌ No tutors available for escalation:", escalationId);
+        console.log(" No tutors available for escalation:", escalationId);
         return false;
       }
 
       const selectedTutor = sortedTutors[0];
-      console.log("🎯 Selected tutor:", {
+      console.log("elected tutor:", {
         id: selectedTutor.id,
         name: `${selectedTutor.firstName} ${selectedTutor.lastName}`,
         email: selectedTutor.email,
@@ -595,7 +595,7 @@ Could you please help me with this? Thank you!`;
       });
 
       const assignmentResult = await this.assignTutorToEscalation(escalationId, selectedTutor.id);
-      console.log("✅ Assignment result:", assignmentResult);
+      console.log(" Assignment result:", assignmentResult);
       
       return assignmentResult;
     } catch (error) {

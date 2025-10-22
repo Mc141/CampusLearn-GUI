@@ -112,14 +112,14 @@ const AdminEscalationManagement: React.FC = () => {
   const handleProcessPendingEscalations = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Admin triggered processing of pending escalations");
+      console.log(" Admin triggered processing of pending escalations");
       await chatbotEscalationService.processPendingEscalations();
 
       // Reload data to show updated assignments
       await loadPendingEscalations();
       await loadStats();
 
-      console.log("✅ Pending escalations processing completed");
+      console.log(" Pending escalations processing completed");
     } catch (err) {
       console.error("Error processing pending escalations:", err);
       setError("Failed to process pending escalations");
@@ -344,7 +344,7 @@ const AdminEscalationManagement: React.FC = () => {
               px: 3,
             }}
           >
-            🔄 Process Pending Escalations
+            Process Pending Escalations
           </Button>
         </Box>
 

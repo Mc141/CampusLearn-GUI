@@ -87,7 +87,7 @@ const ChatbotPage: React.FC = () => {
   const loadConversation = async () => {
     if (!user?.id) return;
 
-    console.log("🔄 Loading conversation for user:", user.id);
+    console.log(" Loading conversation for user:", user.id);
 
     try {
       // Try to get active conversation
@@ -107,9 +107,9 @@ const ChatbotPage: React.FC = () => {
           setError("Failed to create conversation");
           return;
         }
-        console.log("✅ New conversation created:", conversation);
+        console.log(" New conversation created:", conversation);
       } else {
-        console.log("✅ Found existing conversation:", conversation);
+        console.log(" Found existing conversation:", conversation);
       }
 
       setCurrentConversation(conversation);
@@ -171,7 +171,7 @@ const ChatbotPage: React.FC = () => {
 
   useEffect(() => {
     console.log(
-      "🔄 Messages changed, scrolling to bottom. Message count:",
+      " Messages changed, scrolling to bottom. Message count:",
       messages.length
     );
     scrollToBottom();
@@ -236,10 +236,10 @@ const ChatbotPage: React.FC = () => {
       };
 
       // Add bot message to state
-      console.log("🤖 Adding bot message to state:", botMessage);
+      console.log("Adding bot message to state:", botMessage);
       setMessages((prev) => {
         const newMessages = [...prev, botMessage];
-        console.log("📝 Updated messages state:", newMessages);
+        console.log("Updated messages state:", newMessages);
         return newMessages;
       });
 
@@ -288,7 +288,7 @@ const ChatbotPage: React.FC = () => {
   const handleEscalationConfirm = async (confirm: boolean) => {
     if (!pendingEscalation || !currentConversation || !user?.id) return;
 
-    console.log("🔄 Escalation confirmation:", {
+    console.log(" Escalation confirmation:", {
       confirm,
       pendingEscalation,
       currentConversation: currentConversation.id,
@@ -297,7 +297,7 @@ const ChatbotPage: React.FC = () => {
 
     try {
       if (confirm) {
-        console.log("✅ User confirmed escalation - triggering escalation...");
+        console.log(" User confirmed escalation - triggering escalation...");
 
         // User confirmed escalation - trigger the actual escalation
         const tutorAssigned = await chatbotService.handleEscalation(
@@ -309,7 +309,7 @@ const ChatbotPage: React.FC = () => {
         );
 
         console.log(
-          "🎯 Escalation triggered successfully, tutor assigned:",
+          "Escalation triggered successfully, tutor assigned:",
           tutorAssigned
         );
 
@@ -324,7 +324,7 @@ const ChatbotPage: React.FC = () => {
                   content: msg.content.replace(
                     "Please confirm if you'd like me to do this.",
                     tutorAssigned
-                      ? `✅ **Escalation confirmed!** I've connected you with a human tutor for ${
+                      ? ` **Escalation confirmed!** I've connected you with a human tutor for ${
                           pendingEscalation.selectedModule ||
                           pendingEscalation.tutorModule
                         }. You should receive a message from them shortly.`
@@ -347,7 +347,7 @@ const ChatbotPage: React.FC = () => {
                   needsEscalationConfirmation: false,
                   content: msg.content.replace(
                     "Please confirm if you'd like me to do this.",
-                    "❌ **Escalation declined.** No problem! Feel free to ask me anything else or try again later if you need human assistance."
+                    " **Escalation declined.** No problem! Feel free to ask me anything else or try again later if you need human assistance."
                   ),
                 }
               : msg
@@ -648,7 +648,7 @@ const ChatbotPage: React.FC = () => {
                           },
                         }}
                       >
-                        ✅ Yes, connect me with a tutor
+                        Yes, connect me with a tutor
                       </Button>
                       <Button
                         variant="outlined"
@@ -673,7 +673,7 @@ const ChatbotPage: React.FC = () => {
                           },
                         }}
                       >
-                        ❌ No, I'll try something else
+                        No, I'll try something else
                       </Button>
                     </Box>
                   </Box>

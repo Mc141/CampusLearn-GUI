@@ -43,7 +43,7 @@ class ChatbotService {
         prompt: `${context}${formattedHistory}NEW MESSAGE: "${message}"\n\nRespond to this message considering the conversation context above. If the user is asking about something related to previous topics (like adding features to code), provide specific help that builds on the previous discussion.`
       };
 
-      console.log('🤖 CHATBOT REQUEST BODY:');
+      console.log('CHATBOT REQUEST BODY:');
       console.log(JSON.stringify(requestBody, null, 2));
 
       const response = await fetch(this.apiUrl, {
@@ -250,8 +250,8 @@ class ChatbotService {
     confidence?: number
   ): Promise<boolean> {
     try {
-      console.log("🚨 ESCALATION TRIGGERED!");
-      console.log("📋 Escalation details:", {
+      console.log("ESCALATION TRIGGERED!");
+      console.log("Escalation details:", {
         conversationId,
         studentId,
         originalQuestion,
@@ -274,8 +274,8 @@ class ChatbotService {
         priority = 'low';
       }
 
-      console.log("📊 Escalation priority:", priority);
-      console.log("📝 Escalation reason:", escalationReason);
+      console.log("Escalation priority:", priority);
+      console.log("Escalation reason:", escalationReason);
 
       // Create escalation record
       const escalation = await chatbotEscalationService.createEscalation(
@@ -288,24 +288,24 @@ class ChatbotService {
       );
 
       if (escalation) {
-        console.log('✅ Escalation created:', escalation.id);
+        console.log(' Escalation created:', escalation.id);
         
         // Attempt auto-assignment
         const assigned = await chatbotEscalationService.autoAssignEscalation(escalation.id);
         
         if (assigned) {
-          console.log('🎯 Escalation auto-assigned to tutor');
+          console.log('Escalation auto-assigned to tutor');
           return true;
         } else {
-          console.log('⚠️ Escalation created but no tutor available for auto-assignment');
+          console.log('Escalation created but no tutor available for auto-assignment');
           return false;
         }
       } else {
-        console.log('❌ Failed to create escalation record');
+        console.log(' Failed to create escalation record');
         return false;
       }
     } catch (error) {
-      console.error('💥 Error handling escalation:', error);
+      console.error('Error handling escalation:', error);
       return false;
     }
   }

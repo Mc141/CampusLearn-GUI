@@ -42,7 +42,7 @@ class ChatbotConversationService {
       console.log("📊 Active conversation query result:", { data, error });
 
       if (error) {
-        console.error("❌ Error fetching active conversation:", error);
+        console.error(" Error fetching active conversation:", error);
         return null;
       }
 
@@ -51,7 +51,7 @@ class ChatbotConversationService {
         return null;
       }
 
-      console.log("✅ Found active conversation:", data[0]);
+      console.log(" Found active conversation:", data[0]);
       return data[0];
     } catch (error) {
       console.error("💥 Exception fetching active conversation:", error);
@@ -61,7 +61,7 @@ class ChatbotConversationService {
 
   async createConversation(userId: string, title?: string): Promise<ChatbotConversation | null> {
     try {
-      console.log("🆕 Creating conversation for user:", userId);
+      console.log("Creating conversation for user:", userId);
       
       const insertData = {
         user_id: userId,
@@ -71,7 +71,7 @@ class ChatbotConversationService {
         context_limit_reached: false,
       };
       
-      console.log("💾 Creating conversation with data:", insertData);
+      console.log(" Creating conversation with data:", insertData);
       
       const { data, error } = await supabase
         .from("chatbot_conversations")
@@ -79,24 +79,24 @@ class ChatbotConversationService {
         .select()
         .single();
 
-      console.log("📊 Create conversation response:", { data, error });
+      console.log("Create conversation response:", { data, error });
 
       if (error) {
-        console.error("❌ Error creating conversation:", error);
+        console.error(" Error creating conversation:", error);
         return null;
       }
 
-      console.log("✅ Conversation created successfully:", data);
+      console.log(" Conversation created successfully:", data);
       return data;
     } catch (error) {
-      console.error("💥 Exception creating conversation:", error);
+      console.error("Exception creating conversation:", error);
       return null;
     }
   }
 
   async getMessages(conversationId: string): Promise<ChatbotMessageRecord[]> {
     try {
-      console.log("📨 Fetching messages for conversation:", conversationId);
+      console.log("Fetching messages for conversation:", conversationId);
       
       const { data, error } = await supabase
         .from("chatbot_messages")
@@ -104,14 +104,14 @@ class ChatbotConversationService {
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
 
-      console.log("📊 Messages query result:", { data, error });
+      console.log("Messages query result:", { data, error });
 
       if (error) {
-        console.error("❌ Error fetching messages:", error);
+        console.error(" Error fetching messages:", error);
         return [];
       }
 
-      console.log("✅ Found messages:", data?.length || 0);
+      console.log(" Found messages:", data?.length || 0);
       
       // Map database column names to interface properties
       const mappedMessages = (data || []).map((dbRecord: any) => ({
@@ -125,7 +125,7 @@ class ChatbotConversationService {
         createdAt: dbRecord.created_at,
       }));
       
-      console.log("🔄 Mapped database records:", mappedMessages);
+      console.log(" Mapped database records:", mappedMessages);
       return mappedMessages;
     } catch (error) {
       console.error("💥 Exception fetching messages:", error);
@@ -138,8 +138,8 @@ class ChatbotConversationService {
     message: Omit<ChatbotMessageRecord, "id" | "conversationId" | "createdAt">
   ): Promise<ChatbotMessageRecord | null> {
     try {
-      console.log("🔍 Adding message to conversation:", conversationId);
-      console.log("📝 Message data:", message);
+      console.log("Adding message to conversation:", conversationId);
+      console.log("Message data:", message);
       
       const insertData = {
         conversation_id: conversationId,
@@ -150,7 +150,7 @@ class ChatbotConversationService {
         confidence_score: message.confidenceScore,
       };
       
-      console.log("💾 Insert data:", insertData);
+      console.log(" Insert data:", insertData);
       
       const { data, error } = await supabase
         .from("chatbot_messages")
@@ -158,21 +158,21 @@ class ChatbotConversationService {
         .select()
         .single();
 
-      console.log("📊 Database response:", { data, error });
+      console.log("Database response:", { data, error });
 
       if (error) {
-        console.error("❌ Error adding message:", error);
+        console.error(" Error adding message:", error);
         return null;
       }
 
-      console.log("✅ Message added successfully:", data);
+      console.log(" Message added successfully:", data);
 
       // Update message count
       await this.updateMessageCount(conversationId);
 
       return data;
     } catch (error) {
-      console.error("💥 Exception adding message:", error);
+      console.error("Exception adding message:", error);
       return null;
     }
   }
@@ -284,7 +284,7 @@ class ChatbotConversationService {
 
   // Convert database records to ChatbotMessage format
   convertToChatbotMessages(records: ChatbotMessageRecord[]): ChatbotMessage[] {
-    console.log("🔄 Converting database records to chatbot messages:", records);
+    console.log(" Converting database records to chatbot messages:", records);
     
     const converted = records.map((record) => {
       const message = {
@@ -294,11 +294,11 @@ class ChatbotConversationService {
         tutorModule: record.tutorModule || undefined,
         confidenceScore: record.confidenceScore || undefined,
       };
-      console.log("📝 Converting record:", record, "→ message:", message);
+      console.log("Converting record:", record, "→ message:", message);
       return message;
     });
     
-    console.log("✅ Converted messages:", converted);
+    console.log(" Converted messages:", converted);
     return converted;
   }
 }

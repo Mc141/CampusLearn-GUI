@@ -29,7 +29,7 @@ export const userProfileService = {
   // Update user profile
   async updateUserProfile(userId: string, profileData: UpdateUserProfileData): Promise<User> {
     try {
-      console.log("💾 DEBUG: userProfileService.updateUserProfile called with:", {
+      console.log("DEBUG: userProfileService.updateUserProfile called with:", {
         userId,
         profileData
       });
@@ -55,7 +55,7 @@ export const userProfileService = {
       if (profileData.smsNotifications !== undefined) updateData.sms_notifications = profileData.smsNotifications;
       if (profileData.notificationPreferences !== undefined) updateData.notification_preferences = profileData.notificationPreferences;
 
-      console.log("💾 DEBUG: Update data being sent to database:", updateData);
+      console.log("DEBUG: Update data being sent to database:", updateData);
 
       const { data, error } = await supabase
         .from('users')
@@ -65,11 +65,11 @@ export const userProfileService = {
         .single();
 
       if (error) {
-        console.error('❌ Error updating user profile:', error);
+        console.error(' Error updating user profile:', error);
         throw error;
       }
 
-      console.log("✅ DEBUG: Database update successful, returned data:", data);
+      console.log(" DEBUG: Database update successful, returned data:", data);
       return this.mapUserData(data);
     } catch (error) {
       console.error('Error in updateUserProfile:', error);
@@ -125,7 +125,7 @@ export const userProfileService = {
 
   // Helper function to map database user data to User interface
   mapUserData(data: any): User {
-    console.log("🔄 DEBUG: Mapping user data from database:", {
+    console.log(" DEBUG: Mapping user data from database:", {
       emailNotifications: data.email_notifications,
       smsNotifications: data.sms_notifications,
       notificationPreferences: data.notification_preferences
